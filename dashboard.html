@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ИВГУ Лабиринт — Панель организатора</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0a1f2e, #071520);
+            font-family: 'Segoe UI', 'Poppins', sans-serif;
+            padding: 20px;
+        }
+        .dashboard {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: #ffd700;
+            text-shadow: 0 0 10px #ff8c00;
+        }
+        .players-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .player-card {
+            background: rgba(30,30,50,0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 30px;
+            padding: 15px;
+            border: 1px solid rgba(255,180,70,0.5);
+            transition: 0.2s;
+        }
+        .player-card.finished {
+            border-color: #4caf50;
+            background: rgba(40,60,40,0.8);
+        }
+        .player-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+        .player-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid gold;
+        }
+        .player-name {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: white;
+        }
+        .player-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            color: #ddd;
+        }
+        .score { color: #ffd700; font-size: 1.2rem; }
+        .status { font-weight: bold; }
+        .status.finished { color: #4caf50; }
+        .status.playing { color: #ff9800; }
+        .mini-map {
+            margin-top: 10px;
+            background: #1a1a2e;
+            border-radius: 16px;
+            padding: 8px;
+            text-align: center;
+        }
+        .position-badge {
+            background: #ff5722;
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+        .leaderboard-panel {
+            background: rgba(0,0,0,0.6);
+            border-radius: 40px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .leaderboard-panel h2 { color: gold; margin-top: 0; }
+        .leaderboard-list {
+            list-style: none;
+            padding: 0;
+        }
+        .leaderboard-list li {
+            background: rgba(255,255,255,0.1);
+            margin: 8px 0;
+            padding: 10px 15px;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: white;
+        }
+        .rank-1 { background: linear-gradient(90deg, #ffd700, #ffaa00); color: #1a1a2a; }
+        .rank-2 { background: linear-gradient(90deg, #c0c0c0, #a0a0a0); }
+        .rank-3 { background: linear-gradient(90deg, #cd7f32, #b8692a); }
+        .qr-section {
+            text-align: center;
+            margin-bottom: 30px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 30px;
+            padding: 20px;
+        }
+        .qr-code {
+            background: white;
+            display: inline-block;
+            padding: 15px;
+            border-radius: 20px;
+        }
+        .game-link {
+            color: #ffaa44;
+            word-break: break-all;
+            font-size: 0.9rem;
+        }
+        button {
+            background: #ff5722;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 30px;
+            color: white;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        @keyframes pulse {
+            0%,100%{opacity:1} 50%{opacity:0.6}
+        }
+        .waiting { animation: pulse 1.5s infinite; color: #ffaa44; }
+    </style>
+</head>
+<body>
+<div class="dashboard">
+    <h1>🏆 ИВГУ МЕГА-ЛАБИРИНТ 🏆</h1>
+    <div class="qr-section">
+        <h3>📱 Сканируйте QR-код для игры</h3>
+        <div class="qr-code" id="qrCode"></div>
+        <p class="game-link" id="gameLink">Загрузка...</p>
+        <button id="copyLinkBtn">📋 Копировать ссылку</button>
+    </div>
+    
+    <div class="players-grid" id="playersGrid">
+        <div class="waiting">⏳ Ожидание подключения игроков...</div>
+    </div>
+    
+    <div class="leaderboard-panel">
+        <h2>📊 ТАБЛИЦА ЛИДЕРОВ</h2>
+        <ul class="leaderboard-list" id="leaderboardList">
+            <li>Нет данных</li>
+        </ul>
+    </div>
+</div>
+
+<script>
+    const ROOM_ID = "ivgu_maze_2025";
+    let currentState = { players: {}, finishOrder: [] };
+    
+    function loadState() {
+        const saved = localStorage.getItem(`maze_${ROOM_ID}_state`);
+        if(saved) {
+            try {
+                currentState = JSON.parse(saved);
+            } catch(e) {}
+        }
+        renderDashboard();
+    }
+    
+    function renderDashboard() {
+        const players = currentState.players || {};
+        const finishOrder = currentState.finishOrder || [];
+        const playersGrid = document.getElementById('playersGrid');
+        const leaderboardList = document.getElementById('leaderboardList');
+        
+        if(Object.keys(players).length === 0) {
+            playersGrid.innerHTML = '<div class="waiting">👥 Нет активных игроков. Попросите отсканировать QR-код!</div>';
+        } else {
+            playersGrid.innerHTML = Object.values(players).map(p => `
+                <div class="player-card ${p.finished ? 'finished' : ''}">
+                    <div class="player-header">
+                        <img class="player-avatar" src="${p.avatarUrl || 'https://cdn-icons-png.flaticon.com/512/1995/1995572.png'}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1995/1995572.png'">
+                        <div>
+                            <div class="player-name">${escapeHtml(p.name)}</div>
+                            <div class="position-badge">${p.finished ? `🏁 ${p.finishPosition || '?'} место` : '🎯 в игре'}</div>
+                        </div>
+                    </div>
+                    <div class="player-stats">
+                        <span>⭐ <span class="score">${p.score || 0}</span> очков</span>
+                        <span class="status ${p.finished ? 'finished' : 'playing'}">${p.finished ? '✅ ФИНИШ' : '⏳ в пути'}</span>
+                    </div>
+                    <div class="mini-map">
+                        🧭 позиция: (${p.x || 1}, ${p.y || 1})
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Рейтинг по очкам
+        const sortedByScore = Object.values(players).sort((a,b) => (b.score || 0) - (a.score || 0));
+        if(sortedByScore.length === 0) {
+            leaderboardList.innerHTML = '<li>Нет данных</li>';
+        } else {
+            leaderboardList.innerHTML = sortedByScore.slice(0,10).map((p, idx) => `
+                <li class="${idx === 0 ? 'rank-1' : idx === 1 ? 'rank-2' : idx === 2 ? 'rank-3' : ''}">
+                    <span style="font-size:1.3rem;">${idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx+1}.`}</span>
+                    <span>${escapeHtml(p.name)}</span>
+                    <span style="flex:1; text-align:right;">⭐ ${p.score || 0}</span>
+                    <span>${p.finished ? '🏁' : '🎯'}</span>
+                </li>
+            `).join('');
+        }
+    }
+    
+    function escapeHtml(str) { return String(str).replace(/[&<>]/g, function(m) { if(m === '&') return '&amp;'; if(m === '<') return '&lt;'; if(m === '>') return '&gt;'; return m; }); }
+    
+    // Генерация QR и ссылки
+    function getCurrentGameUrl() {
+        let url = window.location.href;
+        if(url.includes('dashboard')) {
+            url = url.replace('dashboard.html', 'phone.html');
+        } else if(url.endsWith('/')) {
+            url = url + 'phone.html';
+        } else {
+            url = url.substring(0, url.lastIndexOf('/') + 1) + 'phone.html';
+        }
+        if(!url.includes('phone.html')) url = url + 'phone.html';
+        return url;
+    }
+    
+    function generateQRCode(url) {
+        const qrDiv = document.getElementById('qrCode');
+        qrDiv.innerHTML = '';
+        if(typeof QRCode === 'undefined') {
+            qrDiv.innerHTML = `<canvas id="tempQr" width="150" height="150"></canvas>`;
+            const canvas = document.getElementById('tempQr');
+            if(canvas) {
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = 'white'; ctx.fillRect(0,0,150,150);
+                ctx.fillStyle = 'black'; ctx.font = '12px sans-serif';
+                ctx.fillText('QR:', 10, 75);
+                ctx.fillText(url.substring(0,25)+'...', 10, 95);
+            }
+            return;
+        }
+        new QRCode(qrDiv, { text: url, width: 150, height: 150 });
+    }
+    
+    function init() {
+        loadState();
+        const gameUrl = getCurrentGameUrl();
+        document.getElementById('gameLink').innerHTML = gameUrl;
+        generateQRCode(gameUrl);
+        document.getElementById('copyLinkBtn')?.addEventListener('click', () => {
+            navigator.clipboard.writeText(gameUrl);
+            alert('Ссылка скопирована!');
+        });
+        // Обновление каждые 0.5 секунды
+        setInterval(() => { loadState(); }, 500);
+        window.addEventListener('storage', (e) => { if(e.key === `maze_${ROOM_ID}_state`) loadState(); });
+    }
+    
+    // Загрузка библиотеки QRCode
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js';
+    script.onload = () => { init(); };
+    document.head.appendChild(script);
+    if(window.QRCode) init();
+</script>
+</body>
+</html>
