@@ -119,6 +119,21 @@
     
     function escapeHtml(str) { if(!str) return ''; return String(str).replace(/[&<>]/g, function(m) { if(m === '&') return '&amp;'; if(m === '<') return '&lt;'; if(m === '>') return '&gt;'; return m; }); }
     
+    // Автоматическое удаление старых игроков
+    setInterval(() => {
+        playersRef.once('value', (snapshot) => {
+            const data = snapshot.val();
+            const now = Date.now();
+            if(data) {
+                for(let id in data) {
+                    if(data[id].lastUpdate && now - data[id].lastUpdate > 30000) {
+                        playersRef.child(id).remove();
+                    }
+                }
+            }
+        });
+    }, 10000);
+    
     playersRef.on('value', (snapshot) => {
         const players = snapshot.val() || {};
         const playersCount = Object.keys(players).length;
@@ -157,7 +172,7 @@
             leaderboardList.innerHTML = sorted.map(p => `
                 <li class="${p.position === 1 ? 'rank-1' : p.position === 2 ? 'rank-2' : p.position === 3 ? 'rank-3' : ''}">
                     <span style="font-size:1.2rem;">${p.position === 1 ? '🥇' : p.position === 2 ? '🥈' : p.position === 3 ? '🥉' : `${p.position}.`}</span>
-                    <span><strong>${escapeHtml(p.name)}</strong></span>
+                    <span><strong>${escapeHtml(p.name)}</strong> ${p.emoji || '🧙'}</span>
                     <span style="flex:1; text-align:right;">⭐ ${p.score || 0}</span>
                     <span>⏱️ ${(p.time/1000).toFixed(1)}с</span>
                 </li>
