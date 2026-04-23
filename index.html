@@ -130,8 +130,8 @@
             flex-wrap: wrap;
         }
         .avatar-option {
-            width: 80px;
-            height: 100px;
+            width: 70px;
+            height: 80px;
             border-radius: 50px;
             cursor: pointer;
             border: 3px solid white;
@@ -144,9 +144,8 @@
             justify-content: center;
             padding: 8px;
         }
-        .avatar-option img { width: 55px; height: 55px; object-fit: cover; border-radius: 50%; border: 2px solid gold; }
+        .avatar-option img { width: 45px; height: 45px; object-fit: cover; border-radius: 50%; border: 2px solid gold; }
         .avatar-option span { font-size: 1.3rem; margin-top: 5px; }
-        .avatar-option div { font-size: 0.7rem; color: white; margin-top: 3px; }
         .avatar-option.selected { transform: scale(1.08); border: 4px solid gold; box-shadow: 0 0 0 3px #ffd966; background: rgba(0,0,0,0.7); }
 
         .leaderboard {
@@ -243,27 +242,40 @@
             font-size: 1rem;
         }
         input { padding: 10px 20px; font-size: 1rem; border-radius: 50px; border: 2px solid #ffb347; width: 240px; text-align: center; }
+
+        .rating-link {
+            margin-top: 15px;
+            font-size: 0.8rem;
+            background: rgba(0,0,0,0.3);
+            padding: 5px 10px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+        .rating-link a {
+            color: #ffaa44;
+            text-decoration: none;
+        }
     </style>
 </head>
 <body>
 <div id="app"></div>
 
 <script>
-    // ========== НАСТРОЙКИ ИГРЫ ==========
-    const MAZE_SIZE = 30;
-    const CELL_SIZE = 26;
+    // ========== НАСТРОЙКИ ИГРЫ (КАРТА 20×20) ==========
+    const MAZE_SIZE = 20;
+    const CELL_SIZE = 32;
 
-    // ВАШИ НОВЫЕ ИКОНКИ (вставлены)
+    // АВАТАРЫ (без названий классов, только имена пользователей)
     const AVATAR_LIST = [
-        { id: 1, name: "Маг", imageUrl: "https://cdn-icons-png.flaticon.com/512/4472/4472533.png", color: "#8B5CF6", emoji: "🧙" },
-        { id: 2, name: "Воин", imageUrl: "https://cdn-icons-png.flaticon.com/512/4472/4472510.png", color: "#EF4444", emoji: "⚔️" },
-        { id: 3, name: "Эльф", imageUrl: "https://cdn-icons-png.flaticon.com/512/4472/4472516.png", color: "#10B981", emoji: "🏹" },
-        { id: 4, name: "Гном", imageUrl: "https://cdn-icons-png.flaticon.com/512/4472/4472521.png", color: "#F59E0B", emoji: "⛏️" },
-        { id: 5, name: "Некромант", imageUrl: "https://cdn-icons-png.flaticon.com/512/4472/4472507.png", color: "#A855F7", emoji: "💀" },
-        { id: 6, name: "Паладин", imageUrl: "https://cdn-icons-png.flaticon.com/512/4472/4472525.png", color: "#3B82F6", emoji: "🛡️" }
+        { id: 1, imageUrl: "https://cdn-icons-png.flaticon.com/512/4472/4472533.png", color: "#8B5CF6", emoji: "🧙" },
+        { id: 2, imageUrl: "https://cdn-icons-png.flaticon.com/512/4472/4472510.png", color: "#EF4444", emoji: "⚔️" },
+        { id: 3, imageUrl: "https://cdn-icons-png.flaticon.com/512/4472/4472516.png", color: "#10B981", emoji: "🏹" },
+        { id: 4, imageUrl: "https://cdn-icons-png.flaticon.com/512/4472/4472521.png", color: "#F59E0B", emoji: "⛏️" },
+        { id: 5, imageUrl: "https://cdn-icons-png.flaticon.com/512/4472/4472507.png", color: "#A855F7", emoji: "💀" },
+        { id: 6, imageUrl: "https://cdn-icons-png.flaticon.com/512/4472/4472525.png", color: "#3B82F6", emoji: "🛡️" }
     ];
 
-    // Вопросы (12 штук)
+    // Вопросы
     const questionsBank = [
         { text: "💾 Что из перечисленного является оперативной памятью?", options: ["Жесткий диск", "SSD-накопитель", "RAM", "Процессор"], correct: 2 },
         { text: "🔢 Сколько бит в одном байте?", options: ["2", "8", "16", "1024"], correct: 1 },
@@ -312,7 +324,7 @@
     let baseMaze = generateMaze(MAZE_SIZE);
     baseMaze[MAZE_SIZE-2][MAZE_SIZE-2] = 4;
 
-    // Декорирование предметами (без телепортов)
+    // Декорирование предметами
     function decorateMazeWithItems(maze) {
         let newMaze = maze.map(row => [...row]);
         let positions = [];
@@ -326,19 +338,23 @@
             [positions[i], positions[j]] = [positions[j], positions[i]]; 
         }
         
-        for(let i = 0; i < 45 && i < positions.length; i++) { 
+        // Монетки (20 штук)
+        for(let i = 0; i < 20 && i < positions.length; i++) { 
             const [x,y] = positions[i]; 
             if(newMaze[y][x] === 0) newMaze[y][x] = 2; 
         }
-        for(let i = 45; i < 75 && i < positions.length; i++) { 
+        // Вопросы (15 штук)
+        for(let i = 20; i < 35 && i < positions.length; i++) { 
             const [x,y] = positions[i]; 
             if(newMaze[y][x] === 0) newMaze[y][x] = 3; 
         }
-        for(let i = 75; i < 90 && i < positions.length; i++) { 
+        // Ловушки (8 штук)
+        for(let i = 35; i < 43 && i < positions.length; i++) { 
             const [x,y] = positions[i]; 
             if(newMaze[y][x] === 0) newMaze[y][x] = 5; 
         }
-        for(let i = 90; i < 100 && i < positions.length; i++) { 
+        // Ускорения (5 штук)
+        for(let i = 43; i < 48 && i < positions.length; i++) { 
             const [x,y] = positions[i]; 
             if(newMaze[y][x] === 0) newMaze[y][x] = 6; 
         }
@@ -353,6 +369,20 @@
     let finishOrder = [];
     let currentScreen = 'welcome';
     let appDiv;
+
+    // Сохранение результатов в localStorage для рейтинга
+    function saveLeaderboard() {
+        localStorage.setItem('maze_leaderboard', JSON.stringify(finishOrder));
+    }
+
+    function loadLeaderboard() {
+        const saved = localStorage.getItem('maze_leaderboard');
+        if(saved) {
+            try {
+                finishOrder = JSON.parse(saved);
+            } catch(e) {}
+        }
+    }
 
     function createEffect(x, y, text, color) {
         const canvas = document.getElementById('gameCanvas');
@@ -512,6 +542,7 @@
                 position: p.finishPosition,
                 emoji: p.emoji
             });
+            saveLeaderboard();
             createEffect(newX, newY, "🏆 ФИНИШ!", "#ffd700");
             refreshUI(); 
             gameActive = false;
@@ -561,7 +592,10 @@
                         `).join('')}
                     </ol>
                 </div>
-                <div style="display:flex; gap:15px; justify-content:center;">
+                <div class="rating-link">
+                    📊 <a href="#" id="showRatingLink">Посмотреть таблицу рейтинга</a>
+                </div>
+                <div style="display:flex; gap:15px; justify-content:center; margin-top:10px;">
                     <button id="restartBtn">🔄 Сыграть снова</button>
                     <button id="menuBtn">🏠 Меню</button>
                 </div>
@@ -569,6 +603,38 @@
         `;
         document.getElementById('restartBtn')?.addEventListener('click', () => { resetAndRestart(); });
         document.getElementById('menuBtn')?.addEventListener('click', () => { window.location.reload(); });
+        document.getElementById('showRatingLink')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            showRatingOnly();
+        });
+    }
+
+    // Отдельная страница с рейтингом (без игры)
+    function showRatingOnly() {
+        const sorted = [...finishOrder].sort((a,b) => a.position - b.position);
+        appDiv.innerHTML = `
+            <div class="screen">
+                <h2>🏆 ТАБЛИЦА РЕЙТИНГА 🏆</h2>
+                <div class="leaderboard">
+                    <ol>
+                        ${sorted.length > 0 ? sorted.map(p => `
+                            <li class="${p.position === 1 ? 'rank-1' : p.position === 2 ? 'rank-2' : p.position === 3 ? 'rank-3' : ''}">
+                                <strong>${p.position}. место</strong> 
+                                <span>${p.emoji || '🧙'} ${p.name}</span>
+                                <span>⭐ ${p.score} очков</span>
+                                <span>⏱️ ${(p.time/1000).toFixed(1)}с</span>
+                            </li>
+                        `).join('') : '<li>Пока нет результатов</li>'}
+                    </ol>
+                </div>
+                <div style="display:flex; gap:15px; justify-content:center; margin-top:10px;">
+                    <button id="backToGameBtn">🎮 На главную</button>
+                </div>
+            </div>
+        `;
+        document.getElementById('backToGameBtn')?.addEventListener('click', () => {
+            location.reload();
+        });
     }
 
     function resetAndRestart() {
@@ -640,6 +706,9 @@
                     <div class="touch-btn" data-dx="0" data-dy="1">▼</div>
                     <div class="touch-btn" data-dx="1" data-dy="0">▶</div>
                 </div>
+                <div class="rating-link">
+                    📊 <a href="#" id="ratingLink">Посмотреть таблицу рейтинга</a>
+                </div>
                 <p style="color:white; margin-top:8px; text-align:center; font-size:0.7rem;">⭐ монетка +10 | ❓ вопрос +5 | ⚠️ заморозка | ⚡ ускорение</p>
             </div>
         `;
@@ -648,6 +717,10 @@
             const handler = (e) => { e.preventDefault(); tryMove(dx, dy); };
             btn.addEventListener('click', handler); 
             btn.addEventListener('touchstart', handler, { passive: false });
+        });
+        document.getElementById('ratingLink')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            showRatingOnly();
         });
         refreshUI();
     }
@@ -660,6 +733,9 @@
                 <p>⭐ Монетки +10 | ❓ Вопросы +5 | ⚠️ Ловушки | ⚡ Ускорение</p>
                 <div><input type="text" id="playerName" placeholder="Твой никнейм" maxlength="16"></div>
                 <button id="toAvatar">🎮 Выбрать аватара</button>
+                <div class="rating-link">
+                    📊 <a href="#" id="ratingLinkWelcome">Посмотреть таблицу рейтинга</a>
+                </div>
             </div>
         `;
         document.getElementById('toAvatar')?.addEventListener('click', () => {
@@ -684,6 +760,11 @@
             currentScreen = 'avatarPick'; 
             renderAvatarScreen();
         });
+        document.getElementById('ratingLinkWelcome')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            loadLeaderboard();
+            showRatingOnly();
+        });
     }
 
     function renderAvatarScreen() {
@@ -692,10 +773,9 @@
                 <h2>🎨 Выбери аватара, ${players[localPlayerId]?.name}</h2>
                 <div class="avatar-selector" id="avatarSelector">
                     ${AVATAR_LIST.map((a, idx) => `
-                        <div class="avatar-option ${idx===0?'selected':''}" data-url="${a.imageUrl}" data-color="${a.color}" data-emoji="${a.emoji}" data-name="${a.name}">
+                        <div class="avatar-option ${idx===0?'selected':''}" data-url="${a.imageUrl}" data-color="${a.color}" data-emoji="${a.emoji}">
                             <img src="${a.imageUrl}">
                             <span>${a.emoji}</span>
-                            <div>${a.name}</div>
                         </div>
                     `).join('')}
                 </div>
@@ -710,8 +790,7 @@
                 selected = { 
                     imageUrl: opt.dataset.url, 
                     color: opt.dataset.color, 
-                    emoji: opt.dataset.emoji,
-                    name: opt.dataset.name
+                    emoji: opt.dataset.emoji
                 };
             });
         });
@@ -720,7 +799,6 @@
             players[localPlayerId].avatarUrl = selected.imageUrl; 
             players[localPlayerId].color = selected.color;
             players[localPlayerId].emoji = selected.emoji;
-            players[localPlayerId].name = selected.name;
             const img = new Image(); 
             img.src = selected.imageUrl; 
             players[localPlayerId].avatarImg = img;
@@ -730,6 +808,7 @@
 
     function init() {
         appDiv = document.getElementById('app');
+        loadLeaderboard();
         renderWelcomeScreen();
     }
     
