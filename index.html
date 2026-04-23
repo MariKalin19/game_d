@@ -289,12 +289,12 @@
     const ROOM_ID = "ivgu_maze_2025";
 
     const AVATAR_LIST = [
-        { id: 1, name: "Маг", imageUrl: "https://pic.rtbcdn.ru/video/2026-03-03/50/02/50020fcd78f106f1fbcd13a417ea456c.jpg", color: "#8B5CF6", emoji: "🧙" },
-        { id: 2, name: "Воин", imageUrl: "https://i.pinimg.com/736x/b0/62/c0/b062c0839970c5a25ab0fe88cb185661.jpg", color: "#EF4444", emoji: "⚔️" },
-        { id: 3, name: "Эльф", imageUrl: "https://avatars.mds.yandex.net/i?id=5eca1a4c62663c8526e15cfb883bf151_l-5405548-images-thumbs&n=13", color: "#10B981", emoji: "🏹" },
-        { id: 4, name: "Гном", imageUrl: "https://i.pinimg.com/originals/4a/03/e1/4a03e179422ceb1284f97f0e9bdc3bb9.jpg", color: "#F59E0B", emoji: "⛏️" },
-        { id: 5, name: "Некромант", imageUrl: "https://i.pinimg.com/originals/1f/ed/15/1fed15dcb1fbc206902322db3335212e.jpg?nii=t", color: "#A855F7", emoji: "💀" },
-        { id: 6, name: "Паладин", imageUrl: "https://i.pinimg.com/736x/ed/0c/b8/ed0cb8dc4b2c6c795b42b8a65e4087eb.jpg", color: "#3B82F6", emoji: "🛡️" }
+        { id: 1, name: "Маг", imageUrl: "https://pic.rtbcdn.ru/video/2026-03-03/50/02/50020fcd78f106f1fbcd13a417ea456c.jpg&quot;, color: "#8B5CF6", emoji: "🧙" },
+        { id: 2, name: "Воин", imageUrl: "https://i.pinimg.com/736x/b0/62/c0/b062c0839970c5a25ab0fe88cb185661.jpg&quot;, color: "#EF4444", emoji: "⚔️" },
+        { id: 3, name: "Эльф", imageUrl: "https://avatars.mds.yandex.net/i?id=5eca1a4c62663c8526e15cfb883bf151_l-5405548-images-thumbs&n=13&quot;, color: "#10B981", emoji: "🏹" },
+        { id: 4, name: "Гном", imageUrl: "https://i.pinimg.com/originals/4a/03/e1/4a03e179422ceb1284f97f0e9bdc3bb9.jpg&quot;, color: "#F59E0B", emoji: "⛏️" },
+        { id: 5, name: "Некромант", imageUrl: "https://i.pinimg.com/originals/1f/ed/15/1fed15dcb1fbc206902322db3335212e.jpg?nii=t&quot;, color: "#A855F7", emoji: "💀" },
+        { id: 6, name: "Паладин", imageUrl: "https://i.pinimg.com/736x/ed/0c/b8/ed0cb8dc4b2c6c795b42b8a65e4087eb.jpg&quot;, color: "#3B82F6", emoji: "🛡️" }
     ];
 
     const questionsBank = [
@@ -750,4 +750,145 @@
                         players[id].emoji = data[id].emoji || '🧙';
                         players[id].x = data[id].x || 1;
                         players[id].y = data[id].y || 1;
-                        players[id
+                        players[id].score = data[id].score || 0;
+                        players[id].finished = data[id].finished || false;
+                        if(!players[id].avatarImg) {
+                            const newImg = new Image();
+                            newImg.src = data[id].avatarUrl;
+                            players[id].avatarImg = newImg;
+                        }
+                    }
+                }
+                refreshUI();
+            }
+        });
+        
+        if (finishListener) finishListener.off();
+        finishListener = roomRef.child('finishOrder').on('value', (snapshot) => {
+            const data = snapshot.val();
+            if(data) finishOrder = data;
+        });
+    }
+
+    function renderGameScreen() {
+        const p = players[localPlayerId];
+        appDiv.innerHTML = `
+            <div class="game-container">
+                <div class="game-header">
+                    <div class="player-name-badge">
+                        <img class="player-avatar-large" src="${p?.avatarUrl || ''}">
+                        <span>${p?.name || 'Игрок'} ${p?.emoji || '🧙'}</span>
+                    </div>
+                    <div class="stats-badge" id="gameStatus">⭐ 0 очков</div>
+                </div>
+                <div id="gameContainerDiv"><canvas id="gameCanvas" width="${MAZE_SIZE * CELL_SIZE}" height="${MAZE_SIZE * CELL_SIZE}"></canvas></div>
+                <div class="touch-controls">
+                    <div class="touch-btn" data-dx="0" data-dy="-1">▲</div>
+                    <div class="touch-btn" data-dx="-1" data-dy="0">◀</div>
+                    <div class="touch-btn" data-dx="0" data-dy="1">▼</div>
+                    <div class="touch-btn" data-dx="1" data-dy="0">▶</div>
+                </div>
+                <p style="color:white; margin-top:8px; text-align:center; font-size:0.7rem;">⭐ монетка +10 | ❓ вопрос +5 | ⚠️ заморозка | ⚡ ускорение</p>
+            </div>
+        `;
+        document.querySelectorAll('.touch-btn').forEach(btn => {
+            const dx = parseInt(btn.dataset.dx), dy = parseInt(btn.dataset.dy);
+            const handler = (e) => { e.preventDefault(); tryMove(dx, dy); };
+            btn.addEventListener('click', handler); 
+            btn.addEventListener('touchstart', handler, { passive: false });
+        });
+        refreshUI();
+    }
+
+    function renderWelcomeScreen() {
+        appDiv.innerHTML = `
+            <div class="screen">
+                <div class="ivsu-logo">🏛️ ИВГУ</div>
+                <h2>🔰 Мега-Лабиринт</h2>
+                <p>⭐ Монетки +10 | ❓ Вопросы +5 | ⚠️ Ловушки | ⚡ Ускорение</p>
+                <div><input type="text" id="playerName" placeholder="Твой никнейм" maxlength="16"></div>
+                <button id="toAvatar">🎮 Выбрать аватара</button>
+            </div>
+        `;
+        document.getElementById('toAvatar')?.addEventListener('click', () => {
+            const name = document.getElementById('playerName').value.trim();
+            if(!name) return alert("Введите имя!");
+            localPlayerId = "player_" + Date.now() + "_" + Math.random().toString(36).substr(2, 6);
+            const img = new Image(); 
+            img.src = AVATAR_LIST[0].imageUrl;
+            players[localPlayerId] = { 
+                name, 
+                avatarUrl: AVATAR_LIST[0].imageUrl, 
+                color: AVATAR_LIST[0].color, 
+                emoji: AVATAR_LIST[0].emoji,
+                x: 1, 
+                y: 1, 
+                score: 0, 
+                finished: false, 
+                finishTime: null, 
+                hasPendingQuestion: false, 
+                frozenUntil: null, 
+                avatarImg: img 
+            };
+            currentScreen = 'avatarPick'; 
+            renderAvatarScreen();
+        });
+    }
+
+    function renderAvatarScreen() {
+        appDiv.innerHTML = `
+            <div class="screen">
+                <h2>🎨 Выбери аватара, ${players[localPlayerId]?.name}</h2>
+                <div class="avatar-selector" id="avatarSelector">
+                    ${AVATAR_LIST.map((a, idx) => `
+                        <div class="avatar-option ${idx===0?'selected':''}" data-url="${a.imageUrl}" data-color="${a.color}" data-emoji="${a.emoji}" data-name="${a.name}">
+                            <img src="${a.imageUrl}">
+                            <span>${a.emoji}</span>
+                            <div style="font-size:0.7rem;">${a.name}</div>
+                        </div>
+                    `).join('')}
+                </div>
+                <button id="startBtn">🏁 Начать гонку!</button>
+            </div>
+        `;
+        let selected = AVATAR_LIST[0];
+        document.querySelectorAll('.avatar-option').forEach(opt => {
+            opt.addEventListener('click', () => {
+                document.querySelectorAll('.avatar-option').forEach(o => o.classList.remove('selected'));
+                opt.classList.add('selected');
+                selected = { 
+                    imageUrl: opt.dataset.url, 
+                    color: opt.dataset.color, 
+                    emoji: opt.dataset.emoji,
+                    name: opt.dataset.name
+                };
+            });
+        });
+        
+        document.getElementById('startBtn')?.addEventListener('click', () => {
+            players[localPlayerId].avatarUrl = selected.imageUrl; 
+            players[localPlayerId].color = selected.color;
+            players[localPlayerId].emoji = selected.emoji;
+            const img = new Image(); 
+            img.src = selected.imageUrl; 
+            players[localPlayerId].avatarImg = img;
+            
+            if(firebaseReady && db) {
+                roomRef = db.ref(`rooms/${ROOM_ID}`);
+                playersRef = roomRef.child('players');
+                syncPlayerToFirebase();
+                setupFirebaseListeners();
+            }
+            startCountdown();
+        });
+    }
+
+    function init() {
+        appDiv = document.getElementById('app');
+        renderWelcomeScreen();
+    }
+    
+    init();
+</script>
+</body>
+</html>
