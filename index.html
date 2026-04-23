@@ -25,11 +25,9 @@
             justify-content: center;
             align-items: center;
             padding: 12px;
-            overflow-x: auto;
         }
 
         #app {
-            overflow-x: auto;
             max-width: 100vw;
             padding: 8px;
         }
@@ -44,28 +42,28 @@
         canvas {
             display: block;
             margin: 0 auto;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border-radius: 24px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
             background: #1a1a2e;
-            width: auto;
-            height: auto;
             max-width: 100%;
+            height: auto;
+            cursor: pointer;
         }
 
-        /* Полупрозрачные кнопки управления (альтернатива джойстику) */
+        /* Сенсорные кнопки */
         .touch-controls {
             display: flex;
             justify-content: center;
-            gap: 20px;
+            gap: 18px;
             margin-top: 20px;
             margin-bottom: 10px;
         }
         .touch-btn {
-            width: 70px;
-            height: 70px;
-            background: rgba(30, 30, 50, 0.7);
+            width: 75px;
+            height: 75px;
+            background: rgba(20, 25, 45, 0.85);
             backdrop-filter: blur(12px);
-            border: 2px solid rgba(255, 180, 70, 0.8);
+            border: 2px solid rgba(255, 200, 100, 0.9);
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -75,15 +73,16 @@
             color: white;
             cursor: pointer;
             transition: 0.05s linear;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.3);
             touch-action: manipulation;
         }
         .touch-btn:active {
             transform: scale(0.92);
             background: #ff5722;
+            border-color: #ffaa44;
         }
         @media (max-width: 600px) {
-            .touch-btn { width: 60px; height: 60px; font-size: 1.7rem; }
+            .touch-btn { width: 65px; height: 65px; font-size: 1.8rem; }
             .touch-controls { gap: 12px; }
         }
 
@@ -91,26 +90,24 @@
             background: linear-gradient(135deg, rgba(255,248,225,0.98), rgba(255,240,200,0.98));
             border-radius: 60px;
             padding: 20px 25px;
-            max-width: 1300px;
+            max-width: 550px;
             width: 95vw;
             text-align: center;
             animation: slideIn 0.4s ease-out;
         }
-
         @keyframes slideIn {
             from { opacity: 0; transform: translateY(30px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
         .ivsu-logo {
-            font-size: 2.8rem;
+            font-size: 2.5rem;
             background: linear-gradient(135deg, #ffd700, #ff8c00);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
             animation: glow 2s ease-in-out infinite;
         }
-
         @keyframes glow {
             0%, 100% { filter: drop-shadow(0 0 5px gold); }
             50% { filter: drop-shadow(0 0 20px orange); }
@@ -120,7 +117,7 @@
             background: linear-gradient(135deg, #ff7b2c, #ff5722);
             border: none;
             padding: 12px 28px;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: bold;
             border-radius: 50px;
             color: white;
@@ -176,7 +173,7 @@
         .rank-3 { background: linear-gradient(90deg, #cd7f32, #b8692a); }
 
         .countdown {
-            font-size: 5rem;
+            font-size: 4rem;
             font-weight: bold;
             color: #ff5733;
             text-align: center;
@@ -206,7 +203,7 @@
             align-items: center;
             gap: 8px;
         }
-        .player-avatar-large { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
+        .player-avatar-large { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid gold; }
         .stats-badge { background: rgba(0,0,0,0.7); padding: 5px 18px; border-radius: 40px; font-weight: bold; }
         
         .question-modal {
@@ -235,38 +232,22 @@
         .question-option {
             background: linear-gradient(135deg, #ff7b2c, #ff5722);
             margin: 8px 0;
-            padding: 10px;
+            padding: 12px;
             border-radius: 50px;
             cursor: pointer;
             font-weight: bold;
             color: white;
             width: 100%;
             border: none;
+            font-size: 1rem;
         }
-        .flex-row { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; }
         input { padding: 10px 20px; font-size: 1rem; border-radius: 50px; border: 2px solid #ffb347; width: 240px; text-align: center; }
-
-        @media (orientation: landscape) and (max-width: 900px) {
-            .game-header { font-size: 0.8rem; padding: 5px 12px; }
-            .stats-badge, .player-name-badge { padding: 4px 12px; font-size: 0.8rem; }
-        }
         
         .online-status {
             font-size: 0.7rem;
             background: rgba(0,0,0,0.5);
             border-radius: 20px;
             padding: 2px 8px;
-            margin-left: 8px;
-        }
-        .dashboard-link {
-            margin-top: 10px;
-            font-size: 0.8rem;
-            background: rgba(0,0,0,0.3);
-            padding: 5px;
-            border-radius: 20px;
-        }
-        .dashboard-link a {
-            color: #ffaa44;
         }
     </style>
 </head>
@@ -274,92 +255,84 @@
 <div id="app"></div>
 
 <script>
-    // ========== КОНФИГУРАЦИЯ FIREBASE ==========
-    // Firebase конфигурация (бесплатный проект)
-    // ВАЖНО: Замените на свои данные из консоли Firebase
+    // ========== 🔥 FIREBASE КОНФИГУРАЦИЯ ==========
     const firebaseConfig = {
         apiKey: "AIzaSyBiyUPr5amhTM8mZQ7S7Jvfvvf3KBqaTz8",
         authDomain: "game-f045d.firebaseapp.com",
-        databaseURL: "https://game-f045d-default-rtdb.europe-west1.firebasedatabase.app",  // ← ВСТАВЬТЕ СЮДА
+        databaseURL: "https://game-f045d-default-rtdb.europe-west1.firebasedatabase.app",
         projectId: "game-f045d",
         storageBucket: "game-f045d.firebasestorage.app",
         messagingSenderId: "159790344496",
         appId: "1:159790344496:web:307d3ebeae6da4596b00f5"
     };
     
-    // Для демонстрации используем localStorage + BroadcastChannel (работает на одном устройстве)
-    // В реальном проекте создайте бесплатный Firebase проект и вставьте свои данные выше
+    let db, roomRef, playersRef;
+    let firebaseReady = false;
     
-    let firebaseInitialized = false;
-    let db = null;
-    let roomRef = null;
-    let playersRef = null;
-    
-    // Пытаемся инициализировать Firebase, если нет - используем localStorage
     try {
-        if (typeof firebase !== 'undefined' && firebaseConfig.apiKey !== "AIzaSyDummyKeyReplaceWithYourOwn") {
-            firebase.initializeApp(firebaseConfig);
-            db = firebase.database();
-            firebaseInitialized = true;
-            console.log("✅ Firebase подключен");
-        }
+        firebase.initializeApp(firebaseConfig);
+        db = firebase.database();
+        firebaseReady = true;
+        console.log("✅ Firebase подключен");
     } catch(e) {
-        console.warn("Firebase не настроен, используем localStorage режим", e);
+        console.error("❌ Ошибка Firebase:", e);
     }
     
-    // Режим синхронизации (Firebase или localStorage)
-    const SYNC_MODE = firebaseInitialized ? 'firebase' : 'local';
-    const ROOM_ID = "ivgu_maze_2025";
-    
     // ========== НАСТРОЙКИ ИГРЫ ==========
-    const MAZE_SIZE = 40;
-    const CELL_SIZE = 22;
+    const MAZE_SIZE = 30;  // Уменьшил до 30×30
+    const CELL_SIZE = 26;   // Чуть крупнее клетки для удобства
+    const ROOM_ID = "ivgu_maze_2025";
 
+    // Красивые иконки аватаров
     const AVATAR_LIST = [
-        { id: 1, name: "Программист", imageUrl: "https://cdn-icons-png.flaticon.com/512/1995/1995572.png", color: "#3498db" },
-        { id: 2, name: "Кодер", imageUrl: "https://cdn-icons-png.flaticon.com/512/1995/1995576.png", color: "#e34234" },
-        { id: 3, name: "Аналитик", imageUrl: "https://cdn-icons-png.flaticon.com/512/3135/3135715.png", color: "#9b59b6" },
-        { id: 4, name: "Киберспец", imageUrl: "https://cdn-icons-png.flaticon.com/512/2881/2881142.png", color: "#2ecc71" },
-        { id: 5, name: "AI Разраб", imageUrl: "https://cdn-icons-png.flaticon.com/512/1995/1995612.png", color: "#f1c40f" },
-        { id: 6, name: "Web Dev", imageUrl: "https://cdn-icons-png.flaticon.com/512/1055/1055687.png", color: "#e67e22" }
+        { id: 1, name: "Маг", imageUrl: "https://cdn-icons-png.flaticon.com/512/1995/1995572.png", color: "#8B5CF6", emoji: "🧙" },
+        { id: 2, name: "Воин", imageUrl: "https://cdn-icons-png.flaticon.com/512/1995/1995576.png", color: "#EF4444", emoji: "⚔️" },
+        { id: 3, name: "Эльф", imageUrl: "https://cdn-icons-png.flaticon.com/512/3135/3135715.png", color: "#10B981", emoji: "🏹" },
+        { id: 4, name: "Гном", imageUrl: "https://cdn-icons-png.flaticon.com/512/2881/2881142.png", color: "#F59E0B", emoji: "⛏️" },
+        { id: 5, name: "Некромант", imageUrl: "https://cdn-icons-png.flaticon.com/512/1995/1995612.png", color: "#8B5CF6", emoji: "💀" },
+        { id: 6, name: "Паладин", imageUrl: "https://cdn-icons-png.flaticon.com/512/1055/1055687.png", color: "#3B82F6", emoji: "🛡️" }
     ];
 
+    // НОВЫЕ ВОПРОСЫ
+    const questionsBank = [
+        { text: "💾 Что из перечисленного является оперативной памятью?", options: ["Жесткий диск", "SSD-накопитель", "RAM", "Процессор"], correct: 2 },
+        { text: "🔢 Сколько бит в одном байте?", options: ["2", "8", "16", "1024"], correct: 1 },
+        { text: "💻 Какой системой счисления пользуется компьютер внутри себя?", options: ["Десятичной", "Двоичной", "Шестнадцатеричной", "Троичной"], correct: 1 },
+        { text: "📋 Что такое алгоритм?", options: ["Название программы", "Последовательность действий для решения задачи", "Ошибка в коде", "Тип процессора"], correct: 1 },
+        { text: "🌐 Что означает аббревиатура IP-адрес?", options: ["Internet Protocol Address", "Internal Program Access", "Important Computer Code", "Internet Password"], correct: 0 },
+        { text: "⚡ Для чего нужен кэш (cache) процессора?", options: ["Для хранения фильмов", "Для ускорения доступа к часто используемым данным", "Для подключения к интернету", "Для вывода изображения"], correct: 1 },
+        { text: "🧮 Что выведет этот код: x = 5; y = 3; print(x + y * 2)", options: ["16", "11", "10", "13"], correct: 1 },
+        { text: "🔄 Что такое цикл в программировании?", options: ["Тип данных для текста", "Конструкция, повторяющая блок кода", "Графический интерфейс", "Ошибка компиляции"], correct: 1 },
+        { text: "⚖️ В чем разница между = и == в большинстве языков?", options: ["Никакой", "= — присваивание, == — сравнение", "= — сравнение, == — присваивание", "Оба для вывода"], correct: 1 },
+        { text: "🗄️ Как в БД называется одна запись о человеке (Иванов, 15 лет)?", options: ["Поле", "Ячейка", "Строка (запись)", "Формула"], correct: 2 },
+        { text: "🔐 Что такое двухфакторная аутентификация (2FA)?", options: ["Два пароля", "Пароль + СМС/отпечаток", "Два логина", "Два монитора"], correct: 1 },
+        { text: "⌨️ Что делает Ctrl + Z в любом редакторе?", options: ["Сохраняет", "Копирует", "Отменяет последнее действие", "Закрывает программу"], correct: 2 }
+    ];
+    
+    function getRandomQuestion() { 
+        return { ...questionsBank[Math.floor(Math.random() * questionsBank.length)], id: Date.now() + Math.random() }; 
+    }
+
+    // Генерация лабиринта
     function generateMaze(size) {
         let maze = Array(size).fill().map(() => Array(size).fill(1));
         function carve(x, y) {
             let dirs = [[0, -2], [2, 0], [0, 2], [-2, 0]];
-            for (let i = dirs.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [dirs[i], dirs[j]] = [dirs[j], dirs[i]];
-            }
+            for (let i = dirs.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [dirs[i], dirs[j]] = [dirs[j], dirs[i]]; }
             for (let [dx, dy] of dirs) {
                 const nx = x + dx, ny = y + dy;
                 if (nx > 0 && nx < size-1 && ny > 0 && ny < size-1 && maze[ny][nx] === 1) {
-                    maze[ny][nx] = 0;
-                    maze[y + dy/2][x + dx/2] = 0;
-                    carve(nx, ny);
+                    maze[ny][nx] = 0; maze[y + dy/2][x + dx/2] = 0; carve(nx, ny);
                 }
             }
         }
-        maze[1][1] = 0;
-        carve(1, 1);
-        maze[size-2][size-2] = 0;
-        maze[size-2][size-3] = 0;
-        maze[size-3][size-2] = 0;
+        maze[1][1] = 0; carve(1, 1);
+        maze[size-2][size-2] = 0; maze[size-2][size-3] = 0; maze[size-3][size-2] = 0;
         return maze;
     }
 
     let baseMaze = generateMaze(MAZE_SIZE);
     baseMaze[MAZE_SIZE-2][MAZE_SIZE-2] = 4;
-
-    const questionsBank = [
-        { text: "🤔 Что такое API?", options: ["Интерфейс программирования приложений", "Антивирус", "Язык разметки", "Протокол передачи"], correct: 0 },
-        { text: "🗄️ Что означает SQL?", options: ["Structured Query Language", "Simple Question Language", "Strong Query Logic", "Sequential Query"], correct: 0 },
-        { text: "📚 Что такое стек (LIFO)?", options: ["Очередь", "Стек", "Массив", "Список"], correct: 1 },
-        { text: "🧬 Что такое ООП?", options: ["Объектно-ориентированное программирование", "Однопроходная обработка", "Оптимизация памяти", "Организация процессов"], correct: 0 },
-        { text: "🐙 Что такое Git?", options: ["Система контроля версий", "Язык программирования", "Фреймворк", "База данных"], correct: 0 }
-    ];
-    function getRandomQuestion() { return { ...questionsBank[Math.floor(Math.random() * questionsBank.length)], id: Date.now() + Math.random() }; }
 
     let teleportPairs = {};
     function decorateMazeWithItems(maze) {
@@ -371,16 +344,19 @@
                 if(newMaze[y][x] === 0) positions.push([x, y]);
             }
         }
-        for(let i = positions.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [positions[i], positions[j]] = [positions[j], positions[i]];
-        }
-        for(let i = 0; i < 60 && i < positions.length; i++) { const [x,y] = positions[i]; if(newMaze[y][x] === 0) newMaze[y][x] = 2; }
-        for(let i = 60; i < 95 && i < positions.length; i++) { const [x,y] = positions[i]; if(newMaze[y][x] === 0) newMaze[y][x] = 3; }
-        for(let i = 95; i < 115 && i < positions.length; i++) { const [x,y] = positions[i]; if(newMaze[y][x] === 0) newMaze[y][x] = 5; }
-        for(let i = 115; i < 130 && i < positions.length; i++) { const [x,y] = positions[i]; if(newMaze[y][x] === 0) newMaze[y][x] = 6; }
+        for(let i = positions.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [positions[i], positions[j]] = [positions[j], positions[i]]; }
+        
+        // Монетки (40 штук)
+        for(let i = 0; i < 45 && i < positions.length; i++) { const [x,y] = positions[i]; if(newMaze[y][x] === 0) newMaze[y][x] = 2; }
+        // Вопросы (25 штук)
+        for(let i = 45; i < 75 && i < positions.length; i++) { const [x,y] = positions[i]; if(newMaze[y][x] === 0) newMaze[y][x] = 3; }
+        // Ловушки (10 штук)
+        for(let i = 75; i < 90 && i < positions.length; i++) { const [x,y] = positions[i]; if(newMaze[y][x] === 0) newMaze[y][x] = 5; }
+        // Ускорения (8 штук)
+        for(let i = 90; i < 100 && i < positions.length; i++) { const [x,y] = positions[i]; if(newMaze[y][x] === 0) newMaze[y][x] = 6; }
+        // Телепорты (6 пар = 12 штук)
         const teleports = [];
-        for(let i = 130; i < 140 && i < positions.length; i++) { const [x,y] = positions[i]; if(newMaze[y][x] === 0) { newMaze[y][x] = 7; teleports.push([x,y]); } }
+        for(let i = 100; i < 115 && i < positions.length; i++) { const [x,y] = positions[i]; if(newMaze[y][x] === 0) { newMaze[y][x] = 7; teleports.push([x,y]); } }
         for(let i = 0; i < teleports.length; i += 2) {
             if(i+1 < teleports.length) {
                 const t1 = teleports[i], t2 = teleports[i+1];
@@ -400,56 +376,28 @@
     let currentScreen = 'welcome';
     let appDiv;
 
-    // Синхронизация состояния
-    function broadcastGameState() {
-        const state = {
-            players: players,
-            finishOrder: finishOrder,
-            gameActive: gameActive,
-            timestamp: Date.now()
-        };
-        
-        if (SYNC_MODE === 'firebase' && roomRef) {
-            roomRef.update({ players: players, finishOrder: finishOrder, gameActive: gameActive });
-        } else {
-            localStorage.setItem(`maze_${ROOM_ID}_state`, JSON.stringify(state));
-            window.dispatchEvent(new StorageEvent('storage', { key: `maze_${ROOM_ID}_state`, newValue: JSON.stringify(state) }));
-        }
+    // Синхронизация с Firebase
+    function syncPlayerToFirebase() {
+        if (!firebaseReady || !localPlayerId || !players[localPlayerId]) return;
+        const player = players[localPlayerId];
+        playersRef.child(localPlayerId).set({
+            name: player.name,
+            avatarUrl: player.avatarUrl,
+            color: player.color,
+            emoji: player.emoji,
+            x: player.x,
+            y: player.y,
+            score: player.score,
+            finished: player.finished,
+            finishTime: player.finishTime,
+            finishPosition: player.finishPosition,
+            lastUpdate: Date.now()
+        });
     }
-
-    function loadGlobalState() {
-        if (SYNC_MODE === 'firebase' && roomRef) {
-            roomRef.on('value', (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    if (data.players) {
-                        for(let id in data.players) {
-                            if (id !== localPlayerId && data.players[id]) {
-                                players[id] = data.players[id];
-                            }
-                        }
-                    }
-                    if (data.finishOrder) finishOrder = data.finishOrder;
-                    if (data.gameActive !== undefined) gameActive = data.gameActive;
-                    refreshUI();
-                }
-            });
-        } else {
-            const saved = localStorage.getItem(`maze_${ROOM_ID}_state`);
-            if(saved) {
-                try {
-                    const state = JSON.parse(saved);
-                    for(let id in state.players) {
-                        if(id !== localPlayerId && !players[id]) {
-                            players[id] = state.players[id];
-                        }
-                    }
-                    finishOrder = state.finishOrder || [];
-                    gameActive = state.gameActive;
-                    refreshUI();
-                } catch(e) {}
-            }
-        }
+    
+    function syncFinishOrder() {
+        if (!firebaseReady) return;
+        roomRef.child('finishOrder').set(finishOrder);
     }
 
     function createEffect(x, y, text, color) {
@@ -461,7 +409,7 @@
         div.style.position = 'fixed';
         div.style.left = (rect.left + x * CELL_SIZE + CELL_SIZE/2) + 'px';
         div.style.top = (rect.top + y * CELL_SIZE) + 'px';
-        div.style.fontSize = '1.3rem';
+        div.style.fontSize = '1.2rem';
         div.style.fontWeight = 'bold';
         div.style.color = color;
         div.style.pointerEvents = 'none';
@@ -470,6 +418,7 @@
         document.body.appendChild(div);
         setTimeout(() => div.remove(), 600);
     }
+    
     const effectStyle = document.createElement('style');
     effectStyle.textContent = `@keyframes flyUp { 0% { opacity:1; transform:translateY(0); } 100% { opacity:0; transform:translateY(-40px); } }`;
     document.head.appendChild(effectStyle);
@@ -482,53 +431,90 @@
                 let cell = gameMaze[y][x];
                 let px = x * CELL_SIZE, py = y * CELL_SIZE;
                 if(cell === 1) {
-                    ctx.fillStyle = "#3c2a1f"; ctx.fillRect(px, py, CELL_SIZE-1, CELL_SIZE-1);
-                    ctx.fillStyle = "#5c3e2a"; ctx.fillRect(px+2, py+2, CELL_SIZE-5, CELL_SIZE-5);
+                    ctx.fillStyle = "#3c2a1f";
+                    ctx.fillRect(px, py, CELL_SIZE-1, CELL_SIZE-1);
+                    ctx.fillStyle = "#5c3e2a";
+                    ctx.fillRect(px+2, py+2, CELL_SIZE-5, CELL_SIZE-5);
                 } else if(cell === 2) {
-                    ctx.fillStyle = "#f7d44a"; ctx.beginPath(); ctx.arc(px+CELL_SIZE/2, py+CELL_SIZE/2, 7, 0, 2*Math.PI); ctx.fill();
-                    ctx.fillStyle = "#b8860b"; ctx.font = "12px sans-serif"; ctx.fillText("⭐", px+6, py+14);
+                    ctx.fillStyle = "#f7d44a";
+                    ctx.beginPath(); ctx.arc(px + CELL_SIZE/2, py + CELL_SIZE/2, 8, 0, 2*Math.PI); ctx.fill();
+                    ctx.fillStyle = "#b8860b";
+                    ctx.font = "14px sans-serif";
+                    ctx.fillText("⭐", px+7, py+15);
                 } else if(cell === 3) {
-                    ctx.fillStyle = "#4d9de0"; ctx.fillRect(px+4, py+4, 14, 14);
-                    ctx.fillStyle = "white"; ctx.font = "bold 12px sans-serif"; ctx.fillText("?", px+9, py+15);
+                    ctx.fillStyle = "#4d9de0";
+                    ctx.fillRect(px+4, py+4, 18, 18);
+                    ctx.fillStyle = "white";
+                    ctx.font = "bold 14px sans-serif";
+                    ctx.fillText("?", px+10, py+17);
                 } else if(cell === 4) {
-                    ctx.fillStyle = "#32cd32"; ctx.fillRect(px+4, py+4, 14, 14);
-                    ctx.fillStyle = "white"; ctx.fillText("🏁", px+7, py+15);
+                    ctx.fillStyle = "#32cd32";
+                    ctx.fillRect(px+4, py+4, 18, 18);
+                    ctx.fillStyle = "white";
+                    ctx.font = "13px sans-serif";
+                    ctx.fillText("🏁", px+8, py+17);
                 } else if(cell === 5) {
-                    ctx.fillStyle = "#ff4444"; ctx.fillRect(px+4, py+4, 14, 14);
-                    ctx.fillStyle = "white"; ctx.fillText("⚠️", px+6, py+15);
+                    ctx.fillStyle = "#ff4444";
+                    ctx.fillRect(px+4, py+4, 18, 18);
+                    ctx.fillStyle = "white";
+                    ctx.font = "bold 14px sans-serif";
+                    ctx.fillText("⚠️", px+7, py+17);
                 } else if(cell === 6) {
-                    ctx.fillStyle = "#44ff44"; ctx.fillRect(px+4, py+4, 14, 14);
-                    ctx.fillStyle = "white"; ctx.fillText("⚡", px+8, py+15);
+                    ctx.fillStyle = "#44ff44";
+                    ctx.fillRect(px+4, py+4, 18, 18);
+                    ctx.fillStyle = "white";
+                    ctx.font = "bold 14px sans-serif";
+                    ctx.fillText("⚡", px+8, py+17);
                 } else if(cell === 7) {
-                    ctx.fillStyle = "#aa44ff"; ctx.fillRect(px+4, py+4, 14, 14);
-                    ctx.fillStyle = "white"; ctx.fillText("🌀", px+7, py+15);
+                    ctx.fillStyle = "#aa44ff";
+                    ctx.fillRect(px+4, py+4, 18, 18);
+                    ctx.fillStyle = "white";
+                    ctx.font = "bold 14px sans-serif";
+                    ctx.fillText("🌀", px+8, py+17);
                 } else {
-                    const grad = ctx.createLinearGradient(px, py, px+CELL_SIZE, py+CELL_SIZE);
-                    grad.addColorStop(0, "#f0e6d2"); grad.addColorStop(1, "#e8dcc8");
-                    ctx.fillStyle = grad; ctx.fillRect(px, py, CELL_SIZE-1, CELL_SIZE-1);
+                    const gradient = ctx.createLinearGradient(px, py, px+CELL_SIZE, py+CELL_SIZE);
+                    gradient.addColorStop(0, "#f0e6d2");
+                    gradient.addColorStop(1, "#e8dcc8");
+                    ctx.fillStyle = gradient;
+                    ctx.fillRect(px, py, CELL_SIZE-1, CELL_SIZE-1);
                 }
             }
         }
+        
+        // Рисуем других игроков
         for(let pid in players) {
             const p = players[pid];
-            if(p && !p.finished) {
+            if(p && !p.finished && pid !== localPlayerId) {
                 ctx.fillStyle = p.color;
-                ctx.beginPath(); ctx.arc(p.x * CELL_SIZE + CELL_SIZE/2, p.y * CELL_SIZE + CELL_SIZE/2, 9, 0, 2*Math.PI); ctx.fill();
-                if(p.avatarImg && p.avatarImg.complete) ctx.drawImage(p.avatarImg, p.x * CELL_SIZE + 2, p.y * CELL_SIZE + 2, 17, 17);
-                else { ctx.fillStyle = "white"; ctx.font = "13px sans-serif"; ctx.fillText("👤", p.x * CELL_SIZE + 5, p.y * CELL_SIZE + 15); }
+                ctx.beginPath(); ctx.arc(p.x * CELL_SIZE + CELL_SIZE/2, p.y * CELL_SIZE + CELL_SIZE/2, 10, 0, 2*Math.PI); ctx.fill();
+                ctx.font = "16px sans-serif";
+                ctx.fillStyle = "white";
+                ctx.fillText(p.emoji || "🧙", p.x * CELL_SIZE + 8, p.y * CELL_SIZE + 18);
+                ctx.strokeStyle = "#fff";
+                ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.arc(p.x * CELL_SIZE + CELL_SIZE/2, p.y * CELL_SIZE + CELL_SIZE/2, 12, 0, 2*Math.PI); ctx.stroke();
             }
         }
+        
+        // Рисуем локального игрока
         const localP = players[localPlayerId];
         if(localP && !localP.finished) {
-            ctx.beginPath(); ctx.arc(localP.x * CELL_SIZE + CELL_SIZE/2, localP.y * CELL_SIZE + CELL_SIZE/2, 12, 0, 2*Math.PI);
-            ctx.strokeStyle = "gold"; ctx.lineWidth = 2.5; ctx.stroke();
+            ctx.fillStyle = localP.color;
+            ctx.beginPath(); ctx.arc(localP.x * CELL_SIZE + CELL_SIZE/2, localP.y * CELL_SIZE + CELL_SIZE/2, 12, 0, 2*Math.PI); ctx.fill();
+            ctx.font = "18px sans-serif";
+            ctx.fillStyle = "white";
+            ctx.fillText(localP.emoji || "🧙", localP.x * CELL_SIZE + 8, localP.y * CELL_SIZE + 20);
+            ctx.beginPath(); ctx.arc(localP.x * CELL_SIZE + CELL_SIZE/2, localP.y * CELL_SIZE + CELL_SIZE/2, 14, 0, 2*Math.PI);
+            ctx.strokeStyle = "gold";
+            ctx.lineWidth = 3;
+            ctx.stroke();
         }
     }
 
     function showQuestionModal(player, question) {
         const modal = document.createElement('div'); modal.className = 'question-modal';
         const card = document.createElement('div'); card.className = 'question-card';
-        card.innerHTML = `<h3>❓ ${question.text}</h3><div id="qOptions"></div><p id="qFeedback"></p>`;
+        card.innerHTML = `<h3>❓ ${question.text}</h3><div id="qOptions"></div><p id="qFeedback" style="margin-top:10px; font-weight:bold;"></p>`;
         modal.appendChild(card); document.body.appendChild(modal);
         const optsDiv = card.querySelector('#qOptions');
         question.options.forEach((opt, idx) => {
@@ -538,10 +524,11 @@
                     player.score += 5; player.hasPendingQuestion = false;
                     if(gameMaze[player.y][player.x] === 3) gameMaze[player.y][player.x] = 0;
                     document.body.removeChild(modal); createEffect(player.x, player.y, "+5", "#2ecc71");
-                    refreshUI(); broadcastGameState();
+                    refreshUI(); syncPlayerToFirebase();
                 } else {
                     const fb = card.querySelector('#qFeedback');
-                    fb.innerHTML = '❌ Неправильно! Попробуй ещё раз'; fb.style.color = 'red';
+                    fb.innerHTML = '❌ Неправильно! Попробуй ещё раз';
+                    fb.style.color = 'red';
                 }
             };
             optsDiv.appendChild(btn);
@@ -558,27 +545,47 @@
         const cell = gameMaze[newY][newX];
         if(cell === 1) return false;
         p.x = newX; p.y = newY;
-        if(cell === 2) { p.score += 10; gameMaze[newY][newX] = 0; createEffect(newX, newY, "+10⭐", "gold"); }
-        else if(cell === 3) { p.hasPendingQuestion = true; showQuestionModal(p, getRandomQuestion()); }
+        
+        if(cell === 2) { 
+            p.score += 10; 
+            gameMaze[newY][newX] = 0; 
+            createEffect(newX, newY, "+10⭐", "gold"); 
+        }
+        else if(cell === 3) { 
+            p.hasPendingQuestion = true; 
+            showQuestionModal(p, getRandomQuestion()); 
+        }
         else if(cell === 4 && !p.finished) {
-            p.finished = true; p.finishTime = Date.now() - raceStartTime;
+            p.finished = true; 
+            p.finishTime = Date.now() - raceStartTime;
             p.finishPosition = finishOrder.length + 1;
             finishOrder.push({ id: localPlayerId, name: p.name, score: p.score, time: p.finishTime, position: p.finishPosition });
             createEffect(newX, newY, "🏆 ФИНИШ!", "#ffd700");
-            refreshUI(); broadcastGameState();
+            refreshUI(); syncPlayerToFirebase(); syncFinishOrder();
             setTimeout(() => {
                 const allFinished = Object.values(players).every(p => p.finished === true);
                 if(allFinished) { gameActive = false; showGlobalLeaderboard(); }
             }, 600);
         }
-        else if(cell === 5) { p.frozenUntil = Date.now() + 1500; createEffect(newX, newY, "❄️ ЗАМОРОЗКА", "#88ccff"); }
-        else if(cell === 6) { createEffect(newX, newY, "⚡ УСКОРЕНИЕ", "#44ff44"); gameMaze[newY][newX] = 0; }
+        else if(cell === 5) { 
+            p.frozenUntil = Date.now() + 1500; 
+            createEffect(newX, newY, "❄️ ЗАМОРОЗКА", "#88ccff"); 
+        }
+        else if(cell === 6) { 
+            createEffect(newX, newY, "⚡ УСКОРЕНИЕ", "#44ff44"); 
+            gameMaze[newY][newX] = 0; 
+        }
         else if(cell === 7) {
             const key = `${newX},${newY}`;
-            if(teleportPairs[key]) { const [tx, ty] = teleportPairs[key]; p.x = tx; p.y = ty; createEffect(newX, newY, "🌀 ТЕЛЕПОРТ", "#aa66ff"); createEffect(tx, ty, "🌀 ТЕЛЕПОРТ", "#aa66ff"); gameMaze[newY][newX] = 0; }
-            else { gameMaze[newY][newX] = 0; }
+            if(teleportPairs[key]) { 
+                const [tx, ty] = teleportPairs[key]; 
+                p.x = tx; p.y = ty; 
+                createEffect(newX, newY, "🌀 ТЕЛЕПОРТ", "#aa66ff"); 
+                createEffect(tx, ty, "🌀 ТЕЛЕПОРТ", "#aa66ff"); 
+                gameMaze[newY][newX] = 0; 
+            } else { gameMaze[newY][newX] = 0; }
         }
-        refreshUI(); broadcastGameState();
+        refreshUI(); syncPlayerToFirebase();
         return true;
     }
 
@@ -601,7 +608,7 @@
                 <div class="leaderboard">
                     <ol>${sorted.map(p => `<li class="${p.position === 1 ? 'rank-1' : p.position === 2 ? 'rank-2' : p.position === 3 ? 'rank-3' : ''}"><strong>${p.position}</strong> ${p.name} ⭐ ${p.score} ⏱️ ${(p.time/1000).toFixed(1)}с</li>`).join('')}</ol>
                 </div>
-                <div class="flex-row">
+                <div class="flex-row" style="display:flex; gap:15px; justify-content:center;">
                     <button id="restartBtn">🔄 Сыграть снова</button>
                     <button id="menuBtn">🏠 Меню</button>
                 </div>
@@ -616,7 +623,15 @@
         const p = players[localPlayerId];
         players = {}; finishOrder = [];
         gameMaze = decorateMazeWithItems(baseMaze);
-        if(p) { p.x = 1; p.y = 1; p.score = 0; p.finished = false; p.finishTime = null; p.hasPendingQuestion = false; p.frozenUntil = null; players[localPlayerId] = p; }
+        if(p) { 
+            p.x = 1; p.y = 1; p.score = 0; p.finished = false; 
+            p.finishTime = null; p.hasPendingQuestion = false; p.frozenUntil = null; 
+            players[localPlayerId] = p; 
+        }
+        if(firebaseReady) {
+            playersRef.child(localPlayerId).update({ x:1, y:1, score:0, finished:false, finishTime:null });
+            roomRef.child('finishOrder').set([]);
+        }
         startCountdown();
     }
 
@@ -628,7 +643,8 @@
             players[id].hasPendingQuestion = false; players[id].frozenUntil = null; 
         }
         gameMaze = decorateMazeWithItems(baseMaze);
-        currentScreen = 'game'; renderGameScreen(); broadcastGameState();
+        currentScreen = 'game'; renderGameScreen(); 
+        if(firebaseReady) { playersRef.child(localPlayerId).update({ x:1, y:1, score:0, finished:false }); }
     }
 
     function startCountdown() {
@@ -651,7 +667,10 @@
         appDiv.innerHTML = `
             <div class="game-container">
                 <div class="game-header">
-                    <div class="player-name-badge"><img class="player-avatar-large" src="${p?.avatarUrl || ''}"><span>${p?.name || 'Игрок'}</span></div>
+                    <div class="player-name-badge">
+                        <img class="player-avatar-large" src="${p?.avatarUrl || ''}">
+                        <span>${p?.name || 'Игрок'} ${p?.emoji || '🧙'}</span>
+                    </div>
                     <div class="stats-badge" id="gameStatus">⭐ 0 очков</div>
                 </div>
                 <div id="gameContainerDiv"><canvas id="gameCanvas" width="${MAZE_SIZE * CELL_SIZE}" height="${MAZE_SIZE * CELL_SIZE}"></canvas></div>
@@ -661,69 +680,104 @@
                     <div class="touch-btn" data-dx="0" data-dy="1">▼</div>
                     <div class="touch-btn" data-dx="1" data-dy="0">▶</div>
                 </div>
-                <div class="dashboard-link">
-                    🖥️ <a href="#" id="dashboardLink">Открыть панель организатора</a>
-                </div>
-                <p style="color:white; margin-top:8px; text-align:center; font-size:0.7rem;">Нажми на кнопки | ⚠️ заморозка | ⚡ ускорение | 🌀 телепорт</p>
+                <p style="color:white; margin-top:8px; text-align:center; font-size:0.7rem;">⭐ монетка +10 | ❓ вопрос +5 | ⚠️ заморозка | ⚡ ускорение | 🌀 телепорт</p>
             </div>
         `;
-        
         document.querySelectorAll('.touch-btn').forEach(btn => {
             const dx = parseInt(btn.dataset.dx), dy = parseInt(btn.dataset.dy);
             const handler = (e) => { e.preventDefault(); tryMove(dx, dy); };
-            btn.addEventListener('click', handler); 
-            btn.addEventListener('touchstart', handler, { passive: false });
+            btn.addEventListener('click', handler); btn.addEventListener('touchstart', handler, { passive: false });
         });
-        
-        const dashboardLink = document.getElementById('dashboardLink');
-        if(dashboardLink) {
-            dashboardLink.href = window.location.href.replace(/\/[^\/]*$/, '/dashboard.html');
-            dashboardLink.target = '_blank';
-        }
-        
         refreshUI();
     }
 
     function renderWelcomeScreen() {
-        appDiv.innerHTML = `<div class="screen"><div class="ivsu-logo">🏛️ ИВГУ</div><h2>Мега-Лабиринт</h2><p>⭐ Монетки +10 | ❓ Вопросы +5 | ⚠️ Ловушки | ⚡ Ускорение | 🌀 Телепорты</p><div><input type="text" id="playerName" placeholder="Твой никнейм"></div><button id="toAvatar">🎮 Выбрать аватар</button></div>`;
+        appDiv.innerHTML = `
+            <div class="screen">
+                <div class="ivsu-logo">🏛️ ИВГУ</div>
+                <h2>🔰 Мега-Лабиринт</h2>
+                <p>⭐ Монетки +10 | ❓ Вопросы +5 | ⚠️ Ловушки | ⚡ Ускорение | 🌀 Телепорты</p>
+                <div><input type="text" id="playerName" placeholder="Твой никнейм" maxlength="16"></div>
+                <button id="toAvatar">🎮 Выбрать аватара</button>
+            </div>
+        `;
         document.getElementById('toAvatar')?.addEventListener('click', () => {
             const name = document.getElementById('playerName').value.trim();
             if(!name) return alert("Введите имя!");
             localPlayerId = "player_" + Date.now() + "_" + Math.random().toString(36).substr(2, 6);
             const img = new Image(); img.src = AVATAR_LIST[0].imageUrl;
-            players[localPlayerId] = { name, avatarUrl: AVATAR_LIST[0].imageUrl, color: AVATAR_LIST[0].color, x: 1, y: 1, score: 0, finished: false, finishTime: null, hasPendingQuestion: false, frozenUntil: null, avatarImg: img };
+            players[localPlayerId] = { 
+                name, avatarUrl: AVATAR_LIST[0].imageUrl, color: AVATAR_LIST[0].color, emoji: AVATAR_LIST[0].emoji,
+                x: 1, y: 1, score: 0, finished: false, finishTime: null, 
+                hasPendingQuestion: false, frozenUntil: null, avatarImg: img 
+            };
             currentScreen = 'avatarPick'; renderAvatarScreen();
         });
     }
 
     function renderAvatarScreen() {
-        appDiv.innerHTML = `<div class="screen"><h2>Выбери аватар, ${players[localPlayerId]?.name}</h2><div class="avatar-selector" id="avatarSelector">${AVATAR_LIST.map((a, idx) => `<div class="avatar-option ${idx===0?'selected':''}" data-url="${a.imageUrl}" data-color="${a.color}"><img src="${a.imageUrl}"></div>`).join('')}</div><button id="startBtn">🏁 Начать гонку!</button></div>`;
+        appDiv.innerHTML = `
+            <div class="screen">
+                <h2>🎨 Выбери аватара, ${players[localPlayerId]?.name}</h2>
+                <div class="avatar-selector" id="avatarSelector">
+                    ${AVATAR_LIST.map((a, idx) => `<div class="avatar-option ${idx===0?'selected':''}" data-url="${a.imageUrl}" data-color="${a.color}" data-emoji="${a.emoji}"><img src="${a.imageUrl}"><div style="font-size:1.5rem; margin-top:5px;">${a.emoji}</div></div>`).join('')}
+                </div>
+                <button id="startBtn">🏁 Начать гонку!</button>
+            </div>
+        `;
         let selected = AVATAR_LIST[0];
         document.querySelectorAll('.avatar-option').forEach(opt => {
             opt.addEventListener('click', () => {
                 document.querySelectorAll('.avatar-option').forEach(o => o.classList.remove('selected'));
                 opt.classList.add('selected');
-                selected = { imageUrl: opt.dataset.url, color: opt.dataset.color };
+                selected = { imageUrl: opt.dataset.url, color: opt.dataset.color, emoji: opt.dataset.emoji };
             });
         });
         document.getElementById('startBtn')?.addEventListener('click', () => {
-            players[localPlayerId].avatarUrl = selected.imageUrl; players[localPlayerId].color = selected.color;
+            players[localPlayerId].avatarUrl = selected.imageUrl; 
+            players[localPlayerId].color = selected.color;
+            players[localPlayerId].emoji = selected.emoji;
             const img = new Image(); img.src = selected.imageUrl; players[localPlayerId].avatarImg = img;
-            broadcastGameState();
+            if(firebaseReady) {
+                roomRef = db.ref(`rooms/${ROOM_ID}`);
+                playersRef = roomRef.child('players');
+                syncPlayerToFirebase();
+                // Слушаем других игроков
+                playersRef.on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if(data) {
+                        for(let id in data) {
+                            if(id !== localPlayerId && data[id]) {
+                                if(!players[id]) players[id] = {};
+                                players[id].name = data[id].name;
+                                players[id].avatarUrl = data[id].avatarUrl;
+                                players[id].color = data[id].color;
+                                players[id].emoji = data[id].emoji || '🧙';
+                                players[id].x = data[id].x || 1;
+                                players[id].y = data[id].y || 1;
+                                players[id].score = data[id].score || 0;
+                                players[id].finished = data[id].finished || false;
+                                if(!players[id].avatarImg) {
+                                    const newImg = new Image();
+                                    newImg.src = data[id].avatarUrl;
+                                    players[id].avatarImg = newImg;
+                                }
+                            }
+                        }
+                        refreshUI();
+                    }
+                });
+                roomRef.child('finishOrder').on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if(data) finishOrder = data;
+                });
+            }
             startCountdown();
         });
     }
 
     function init() {
         appDiv = document.getElementById('app');
-        if (SYNC_MODE === 'firebase' && db) {
-            roomRef = db.ref(`rooms/${ROOM_ID}`);
-            playersRef = roomRef.child('players');
-            loadGlobalState();
-        } else {
-            loadGlobalState();
-            window.addEventListener('storage', (e) => { if(e.key === `maze_${ROOM_ID}_state`) { loadGlobalState(); refreshUI(); } });
-        }
         renderWelcomeScreen();
     }
     init();
