@@ -74,9 +74,9 @@
             color: white;
             font-size: 1rem;
         }
-        .rank-1 { background: linear-gradient(90deg, #ffd700, #ffaa00); color: #1a1a2a; }
-        .rank-2 { background: linear-gradient(90deg, #c0c0c0, #a0a0a0); }
-        .rank-3 { background: linear-gradient(90deg, #cd7f32, #b8692a); }
+        .rank-1 { background: linear-gradient(90deg, #ffd700, #ffaa00); color: white !important; }
+        .rank-2 { background: linear-gradient(90deg, #c0c0c0, #a0a0a0); color: white !important; }
+        .rank-3 { background: linear-gradient(90deg, #cd7f32, #b8692a); color: white !important; }
         .empty-list {
             text-align: center;
             padding: 30px;
@@ -87,6 +87,13 @@
         .refresh-btn { background: #2196f3; }
         .auto-refresh { text-align: center; margin-top: 10px; font-size: 0.7rem; color: #4caf50; }
         .player-emoji { font-size: 1.3rem; margin-right: 5px; }
+        .online-badge {
+            background: #4caf50;
+            border-radius: 20px;
+            padding: 2px 10px;
+            font-size: 0.7rem;
+            margin-left: 10px;
+        }
     </style>
 </head>
 <body>
@@ -103,7 +110,7 @@
         <button id="refreshBtn" class="refresh-btn">🔄 Обновить</button>
     </div>
     
-    <h2>👥 ИГРОКИ ОНЛАЙН <span id="playersCount" style="background:#4caf50; border-radius:20px; padding:2px 10px; font-size:0.7rem; margin-left:10px;">0</span></h2>
+    <h2>👥 ИГРОКИ ОНЛАЙН <span id="playersCount" class="online-badge">0</span></h2>
     <div class="players-grid" id="playersGrid">
         <div class="empty-list">⏳ Ожидание подключения игроков...</div>
     </div>
@@ -116,7 +123,7 @@
         <div class="auto-refresh" id="autoRefreshStatus">🔄 Обновляется автоматически</div>
     </div>
     <div class="footer-note">
-        📌 Результаты сохраняются после финиша. Откройте игру в той же сети, чтобы видеть игроков.
+        📌 Результаты сохраняются после финиша. Откройте игру на телефоне, чтобы увидеть игрока.
     </div>
 </div>
 
@@ -146,27 +153,35 @@
                 currentFinishOrder = JSON.parse(saved);
             } catch(e) {
                 console.warn("Ошибка парсинга рейтинга", e);
+                currentFinishOrder = [];
             }
+        } else {
+            currentFinishOrder = [];
         }
         return currentFinishOrder;
     }
     
-    // Загрузка активных игроков из localStorage
+    // Загрузка активных игроков из localStorage (только реальные)
     function loadPlayers() {
         const saved = localStorage.getItem(PLAYERS_KEY);
         if(saved) {
             try {
-                currentPlayers = JSON.parse(saved);
+                const parsed = JSON.parse(saved);
+                // Фильтруем только реальных игроков (исключаем demo_*)
+                currentPlayers = {};
+                for(let id in parsed) {
+                    if(!id.startsWith('demo_')) {
+                        currentPlayers[id] = parsed[id];
+                    }
+                }
             } catch(e) {
                 console.warn("Ошибка парсинга игроков", e);
+                currentPlayers = {};
             }
+        } else {
+            currentPlayers = {};
         }
         return currentPlayers;
-    }
-    
-    // Сохранение игроков (вызывается из игры)
-    function savePlayers(players) {
-        localStorage.setItem(PLAYERS_KEY, JSON.stringify(players));
     }
     
     function renderPlayers() {
@@ -178,7 +193,7 @@
         playersCountSpan.textContent = playersArray.length;
         
         if(playersArray.length === 0) {
-            playersGrid.innerHTML = '<div class="empty-list">👥 Нет активных игроков. Попросите отсканировать QR-код!</div>';
+            playersGrid.innerHTML = '<div class="empty-list">👥 Нет активных игроков. Попросите отсканировать QR-код и начать игру!</div>';
             return;
         }
         
@@ -235,28 +250,9 @@
         renderLeaderboard();
         
         const timestamp = new Date().toLocaleTimeString();
-        console.log(`[${timestamp}] Обновлено: игроков=${Object.keys(currentPlayers).length}, рейтинг=${currentFinishOrder.length}`);
-    }
-    
-    // Демо-игроки для теста (если нет реальных)
-    function addDemoPlayersIfEmpty() {
-        loadPlayers();
-        if(Object.keys(currentPlayers).length === 0) {
-            // Добавляем демо-игроков только для наглядности работы дашборда
-            // В реальности они будут заменены на настоящих
-            const demoPlayers = {
-                "demo_1": { name: "Мария", avatarUrl: "https://cdn-icons-png.flaticon.com/512/4472/4472533.png", color: "#8B5CF6", emoji: "🧙", x: 5, y: 7, score: 45, finished: false },
-                "demo_2": { name: "Алексей", avatarUrl: "https://cdn-icons-png.flaticon.com/512/4472/4472510.png", color: "#EF4444", emoji: "⚔️", x: 12, y: 3, score: 30, finished: false },
-                "demo_3": { name: "Елена", avatarUrl: "https://cdn-icons-png.flaticon.com/512/4472/4472516.png", color: "#10B981", emoji: "🏹", x: 8, y: 15, score: 60, finished: true, finishPosition: 1 }
-            };
-            savePlayers(demoPlayers);
-            const demoFinish = [
-                { position: 1, name: "Елена", emoji: "🏹", score: 60, time: 45000 },
-                { position: 2, name: "Мария", emoji: "🧙", score: 45, time: 72000 }
-            ];
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(demoFinish));
-            refreshAll();
-        }
+        const playersCount = Object.keys(currentPlayers).length;
+        const finishCount = currentFinishOrder.length;
+        console.log(`[${timestamp}] Обновлено: игроков=${playersCount}, рейтинг=${finishCount}`);
     }
     
     function init() {
@@ -278,7 +274,6 @@
         
         // Первая загрузка
         refreshAll();
-        addDemoPlayersIfEmpty(); // Для демонстрации, убрать если не нужно
         
         // Автообновление каждые 3 секунды
         setInterval(() => {
