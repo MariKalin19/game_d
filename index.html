@@ -4,11 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>ИВГУ Мега-Лабиринт — Цифровая экономика</title>
-    
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-    
     <style>
         * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
         body { margin: 0; min-height: 100vh; background: linear-gradient(145deg, #0a2f1a 0%, #051a0a 100%); font-family: 'Segoe UI', 'Poppins', sans-serif; display: flex; justify-content: center; align-items: center; padding: 12px; }
@@ -36,6 +31,7 @@
         .leaderboard li.rank-1 { background: linear-gradient(90deg, #ffd700, #ffaa00); color: #ffffff !important; }
         .leaderboard li.rank-2 { background: linear-gradient(90deg, #c0c0c0, #a0a0a0); color: #ffffff !important; }
         .leaderboard li.rank-3 { background: linear-gradient(90deg, #cd7f32, #b8692a); color: #ffffff !important; }
+        .leaderboard li * { color: #ffffff !important; }
         .countdown { font-size: 4rem; font-weight: bold; color: #ff5733; text-align: center; animation: pulse 0.5s ease infinite; }
         @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
         .game-header { background: linear-gradient(135deg, rgba(0,0,0,0.8), rgba(0,0,0,0.6)); border-radius: 50px; padding: 8px 20px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; color: white; flex-wrap: wrap; gap: 8px; width: 100%; }
@@ -50,48 +46,16 @@
         .rating-link { margin-top: 15px; font-size: 0.8rem; background: rgba(0,0,0,0.3); padding: 5px 10px; border-radius: 20px; display: inline-block; }
         .rating-link a { color: #ffaa44; text-decoration: none; }
         .back-to-game-btn { background: linear-gradient(135deg, #4caf50, #2e7d32); box-shadow: 0 4px 0 #1b5e20; }
-        .cloud-status { font-size: 0.7rem; background: rgba(0,0,0,0.5); border-radius: 20px; padding: 2px 8px; margin-left: 10px; }
+        .back-to-game-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #1b5e20; }
     </style>
 </head>
 <body>
 <div id="app"></div>
 
 <script>
-    // ========== 🔥 FIREBASE КОНФИГУРАЦИЯ ==========
-    // ⚠️ ЗАМЕНИТЕ НА ВАШИ ДАННЫЕ ИЗ КОНСОЛИ FIREBASE!
-    const firebaseConfig = {
-        apiKey: "AIzaSyBiyUPr5amhTM8mZQ7S7Jvfvvf3KBqaTz8",
-        authDomain: "game-f045d.firebaseapp.com",
-        databaseURL: "https://game-f045d-default-rtdb.europe-west1.firebasedatabase.app",
-        projectId: "game-f045d",
-        storageBucket: "game-f045d.firebasestorage.app",
-        messagingSenderId: "159790344496",
-        appId: "1:159790344496:web:307d3ebeae6da4596b00f5"
-    };
-    
-    let db, roomRef, playersRef;
-    let firebaseReady = false;
-    let localPlayerId = null;
-    let gameActive = false;
-    let raceStartTime = 0;
-    let finishOrder = [];
-    let currentScreen = 'welcome';
-    let appDiv;
-    let gameStateBeforeRating = null;
-    
-    try {
-        firebase.initializeApp(firebaseConfig);
-        db = firebase.database();
-        firebaseReady = true;
-        console.log("✅ Firebase подключен");
-    } catch(e) {
-        console.error("❌ Ошибка Firebase:", e);
-        alert("Ошибка подключения к серверу. Проверьте конфигурацию Firebase.");
-    }
-    
+    // ========== НАСТРОЙКИ ИГРЫ ==========
     const MAZE_SIZE = 20;
     const CELL_SIZE = 32;
-    const ROOM_ID = "ivgu_maze_2025";
 
     const AVATAR_LIST = [
         { id: 1, imageUrl: "https://cdn-icons-png.flaticon.com/512/4472/4472533.png", color: "#8B5CF6", emoji: "🧙" },
@@ -140,6 +104,14 @@
     baseMaze[MAZE_SIZE-2][MAZE_SIZE-2] = 4;
     let gameMaze = baseMaze.map(row => [...row]);
     let players = {};
+    let localPlayerId = "player_1";
+    let gameActive = false;
+    let raceStartTime = 0;
+    let finishOrder = [];
+    let currentScreen = 'welcome';
+    let appDiv;
+    let gameStateBeforeRating = null;
+    let syncInterval = null;
 
     function decorateMazeWithItems(maze) {
         let newMaze = maze.map(row => [...row]);
@@ -153,27 +125,39 @@
         return newMaze;
     }
 
-    function syncPlayerToFirebase() {
-        if (!firebaseReady || !localPlayerId || !players[localPlayerId]) return;
-        const player = players[localPlayerId];
-        playersRef.child(localPlayerId).set({
-            name: player.name,
-            avatarUrl: player.avatarUrl,
-            color: player.color,
-            emoji: player.emoji,
-            x: player.x,
-            y: player.y,
-            score: player.score,
-            finished: player.finished,
-            finishPosition: player.finishPosition || null,
-            finishTime: player.finishTime || null,
-            lastUpdate: Date.now()
-        });
+    function saveLeaderboard() {
+        localStorage.setItem('maze_leaderboard', JSON.stringify(finishOrder));
+        // Триггерим событие для дашборда
+        window.dispatchEvent(new StorageEvent('storage', { key: 'maze_leaderboard', newValue: JSON.stringify(finishOrder) }));
     }
-    
-    function syncFinishOrder() {
-        if (!firebaseReady) return;
-        roomRef.child('finishOrder').set(finishOrder);
+
+    function savePlayerToStorage() {
+        if (!players[localPlayerId] || players[localPlayerId].finished) return;
+        const allPlayers = {};
+        allPlayers[localPlayerId] = {
+            id: localPlayerId,
+            name: players[localPlayerId].name,
+            avatarUrl: players[localPlayerId].avatarUrl,
+            color: players[localPlayerId].color,
+            emoji: players[localPlayerId].emoji,
+            x: players[localPlayerId].x,
+            y: players[localPlayerId].y,
+            score: players[localPlayerId].score,
+            finished: players[localPlayerId].finished,
+            finishPosition: players[localPlayerId].finishPosition,
+            lastUpdate: Date.now()
+        };
+        localStorage.setItem('maze_players', JSON.stringify(allPlayers));
+        window.dispatchEvent(new StorageEvent('storage', { key: 'maze_players', newValue: JSON.stringify(allPlayers) }));
+    }
+
+    function startAutoSync() {
+        if (syncInterval) clearInterval(syncInterval);
+        syncInterval = setInterval(() => {
+            if (gameActive && players[localPlayerId] && !players[localPlayerId].finished) {
+                savePlayerToStorage();
+            }
+        }, 1000);
     }
 
     function createEffect(x, y, text, color) {
@@ -250,19 +234,6 @@
                 }
             }
         }
-        for(let pid in players) {
-            const p = players[pid];
-            if(p && !p.finished && pid !== localPlayerId) {
-                ctx.fillStyle = p.color;
-                ctx.beginPath(); ctx.arc(p.x * CELL_SIZE + CELL_SIZE/2, p.y * CELL_SIZE + CELL_SIZE/2, 10, 0, 2*Math.PI); ctx.fill();
-                ctx.font = "16px sans-serif";
-                ctx.fillStyle = "white";
-                ctx.fillText(p.emoji || "🧙", p.x * CELL_SIZE + 8, p.y * CELL_SIZE + 18);
-                ctx.strokeStyle = "#fff";
-                ctx.lineWidth = 1.5;
-                ctx.beginPath(); ctx.arc(p.x * CELL_SIZE + CELL_SIZE/2, p.y * CELL_SIZE + CELL_SIZE/2, 12, 0, 2*Math.PI); ctx.stroke();
-            }
-        }
         const localP = players[localPlayerId];
         if(localP && !localP.finished) {
             ctx.fillStyle = localP.color;
@@ -290,7 +261,7 @@
                     player.score += 5; player.hasPendingQuestion = false;
                     if(gameMaze[player.y][player.x] === 3) gameMaze[player.y][player.x] = 0;
                     document.body.removeChild(modal); createEffect(player.x, player.y, "+5", "#2ecc71");
-                    refreshUI(); syncPlayerToFirebase();
+                    refreshUI(); savePlayerToStorage();
                 } else {
                     const fb = card.querySelector('#qFeedback');
                     fb.innerHTML = '❌ Неправильно! Попробуй ещё раз';
@@ -318,15 +289,16 @@
             p.finished = true; p.finishTime = Date.now() - raceStartTime;
             p.finishPosition = finishOrder.length + 1;
             finishOrder.push({ id: localPlayerId, name: p.name, score: p.score, time: p.finishTime, position: p.finishPosition, emoji: p.emoji });
-            syncFinishOrder();
+            saveLeaderboard();
             createEffect(newX, newY, "🏆 ФИНИШ!", "#ffd700");
-            refreshUI(); syncPlayerToFirebase();
+            refreshUI(); savePlayerToStorage();
             gameActive = false;
+            if (syncInterval) clearInterval(syncInterval);
             setTimeout(() => { showGlobalLeaderboard(); }, 600);
         }
         else if(cell === 5) { p.frozenUntil = Date.now() + 1500; createEffect(newX, newY, "❄️ ЗАМОРОЗКА", "#88ccff"); }
         else if(cell === 6) { createEffect(newX, newY, "⚡ УСКОРЕНИЕ", "#44ff44"); gameMaze[newY][newX] = 0; }
-        refreshUI(); syncPlayerToFirebase();
+        refreshUI(); savePlayerToStorage();
         return true;
     }
 
@@ -351,12 +323,14 @@
             players[localPlayerId] = { ...gameStateBeforeRating.player };
             currentScreen = 'game';
             renderGameScreen();
+            startAutoSync();
             gameStateBeforeRating = null;
         } else { location.reload(); }
     }
 
     function showRatingOnly() {
         saveGameState();
+        if (syncInterval) clearInterval(syncInterval);
         const sorted = [...finishOrder].sort((a,b) => a.position - b.position);
         const hasActiveGame = gameStateBeforeRating !== null && gameStateBeforeRating.gameActive === true;
         appDiv.innerHTML = `
@@ -376,6 +350,7 @@
     }
 
     function showGlobalLeaderboard() {
+        if (syncInterval) clearInterval(syncInterval);
         const sorted = [...finishOrder].sort((a,b) => a.position - b.position);
         appDiv.innerHTML = `
             <div class="screen">
@@ -392,12 +367,12 @@
 
     function resetAndRestart() {
         gameActive = false;
+        if (syncInterval) clearInterval(syncInterval);
         gameStateBeforeRating = null;
         const p = players[localPlayerId];
         players = {}; finishOrder = [];
         gameMaze = decorateMazeWithItems(baseMaze);
         if(p) { p.x = 1; p.y = 1; p.score = 0; p.finished = false; p.finishTime = null; p.hasPendingQuestion = false; p.frozenUntil = null; players[localPlayerId] = p; }
-        if(firebaseReady) { playersRef.child(localPlayerId).update({ x:1, y:1, score:0, finished:false }); roomRef.child('finishOrder').set([]); }
         startCountdown();
     }
 
@@ -406,7 +381,8 @@
         for(let id in players) { players[id].x = 1; players[id].y = 1; players[id].finished = false; players[id].score = 0; players[id].finishTime = null; players[id].hasPendingQuestion = false; players[id].frozenUntil = null; }
         gameMaze = decorateMazeWithItems(baseMaze);
         currentScreen = 'game'; renderGameScreen();
-        if(firebaseReady) syncPlayerToFirebase();
+        startAutoSync();
+        savePlayerToStorage();
     }
 
     function startCountdown() {
@@ -453,7 +429,7 @@
     }
 
     function renderWelcomeScreen() {
-        appDiv.innerHTML = `<div class="screen"><div class="ivsu-logo">🏛️ ИВГУ 🏛️</div><h2>🔰 Мега-Лабиринт</h2><p>⭐ Монетки +10 | ❓ Вопросы +5 | ⚠️ Ловушки | ⚡ Ускорение</p><div><input type="text" id="playerName" placeholder="Ваше имя" maxlength="16"></div><button id="toAvatar">🎮 Выбрать аватара</button><div class="rating-link">📊 <a href="#" id="ratingLinkWelcome">Посмотреть таблицу рейтинга</a></div></div>`;
+        appDiv.innerHTML = `<div class="screen"><div class="ivsu-logo">🏛️ ИВГУ</div><h2>🔰 Мега-Лабиринт</h2><p>⭐ Монетки +10 | ❓ Вопросы +5 | ⚠️ Ловушки | ⚡ Ускорение</p><div><input type="text" id="playerName" placeholder="Твой никнейм" maxlength="16"></div><button id="toAvatar">🎮 Выбрать аватара</button><div class="rating-link">📊 <a href="#" id="ratingLinkWelcome">Посмотреть таблицу рейтинга</a></div></div>`;
         document.getElementById('toAvatar')?.addEventListener('click', () => {
             const name = document.getElementById('playerName').value.trim();
             if(!name) return alert("Введите имя!");
@@ -462,11 +438,11 @@
             players[localPlayerId] = { name, avatarUrl: AVATAR_LIST[0].imageUrl, color: AVATAR_LIST[0].color, emoji: AVATAR_LIST[0].emoji, x: 1, y: 1, score: 0, finished: false, finishTime: null, hasPendingQuestion: false, frozenUntil: null, avatarImg: img };
             currentScreen = 'avatarPick'; renderAvatarScreen();
         });
-        document.getElementById('ratingLinkWelcome')?.addEventListener('click', (e) => { e.preventDefault(); saveGameState(); showRatingOnly(); });
+        document.getElementById('ratingLinkWelcome')?.addEventListener('click', (e) => { e.preventDefault(); showRatingOnly(); });
     }
 
     function renderAvatarScreen() {
-        appDiv.innerHTML = `<div class="screen"><h2>🎨 ${players[localPlayerId]?.name ,} выбери аватара</h2><div class="avatar-selector" id="avatarSelector">${AVATAR_LIST.map((a, idx) => `<div class="avatar-option ${idx===0?'selected':''}" data-url="${a.imageUrl}" data-color="${a.color}" data-emoji="${a.emoji}"><img src="${a.imageUrl}"><span>${a.emoji}</span></div>`).join('')}</div><button id="startBtn">🏁 Начать гонку!</button><div class="rating-link">📊 <a href="#" id="ratingLinkAvatar">Посмотреть таблицу рейтинга</a></div></div>`;
+        appDiv.innerHTML = `<div class="screen"><h2>🎨 Выбери аватара, ${players[localPlayerId]?.name}</h2><div class="avatar-selector" id="avatarSelector">${AVATAR_LIST.map((a, idx) => `<div class="avatar-option ${idx===0?'selected':''}" data-url="${a.imageUrl}" data-color="${a.color}" data-emoji="${a.emoji}"><img src="${a.imageUrl}"><span>${a.emoji}</span></div>`).join('')}</div><button id="startBtn">🏁 Начать гонку!</button><div class="rating-link">📊 <a href="#" id="ratingLinkAvatar">Посмотреть таблицу рейтинга</a></div></div>`;
         let selected = AVATAR_LIST[0];
         document.querySelectorAll('.avatar-option').forEach(opt => {
             opt.addEventListener('click', () => {
@@ -478,38 +454,9 @@
         document.getElementById('startBtn')?.addEventListener('click', () => {
             players[localPlayerId].avatarUrl = selected.imageUrl; players[localPlayerId].color = selected.color; players[localPlayerId].emoji = selected.emoji;
             const img = new Image(); img.src = selected.imageUrl; players[localPlayerId].avatarImg = img;
-            if(firebaseReady) {
-                roomRef = db.ref(`rooms/${ROOM_ID}`);
-                playersRef = roomRef.child('players');
-                syncPlayerToFirebase();
-                playersRef.on('value', (snapshot) => {
-                    const data = snapshot.val();
-                    if(data) {
-                        for(let id in data) {
-                            if(id !== localPlayerId && data[id]) {
-                                if(!players[id]) players[id] = {};
-                                players[id].name = data[id].name;
-                                players[id].avatarUrl = data[id].avatarUrl;
-                                players[id].color = data[id].color;
-                                players[id].emoji = data[id].emoji || '🧙';
-                                players[id].x = data[id].x || 1;
-                                players[id].y = data[id].y || 1;
-                                players[id].score = data[id].score || 0;
-                                players[id].finished = data[id].finished || false;
-                                if(!players[id].avatarImg) { const newImg = new Image(); newImg.src = data[id].avatarUrl; players[id].avatarImg = newImg; }
-                            }
-                        }
-                        refreshUI();
-                    }
-                });
-                roomRef.child('finishOrder').on('value', (snapshot) => {
-                    const data = snapshot.val();
-                    if(data) finishOrder = data;
-                });
-            }
             startCountdown();
         });
-        document.getElementById('ratingLinkAvatar')?.addEventListener('click', (e) => { e.preventDefault(); saveGameState(); showRatingOnly(); });
+        document.getElementById('ratingLinkAvatar')?.addEventListener('click', (e) => { e.preventDefault(); showRatingOnly(); });
     }
 
     function init() { appDiv = document.getElementById('app'); renderWelcomeScreen(); }
