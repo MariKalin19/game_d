@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ИВГУ Лабиринт — Таблица рейтинга</title>
+    <title>ИВГУ Лабиринт — Панель организатора</title>
     <style>
         * { box-sizing: border-box; }
         body {
@@ -13,15 +13,9 @@
             font-family: 'Segoe UI', 'Poppins', sans-serif;
             padding: 20px;
         }
-        .dashboard {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-        h1 {
-            text-align: center;
-            color: #ffd700;
-            text-shadow: 0 0 10px #ff8c00;
-        }
+        .dashboard { max-width: 800px; margin: 0 auto; }
+        h1 { text-align: center; color: #ffd700; text-shadow: 0 0 10px #ff8c00; }
+        
         .qr-section {
             text-align: center;
             background: rgba(255,255,255,0.1);
@@ -33,6 +27,31 @@
         .qr-code img { width: 180px; height: 180px; display: block; }
         .game-link { color: #ffaa44; word-break: break-all; font-size: 1rem; margin-top: 15px; background: rgba(0,0,0,0.5); padding: 8px 15px; border-radius: 30px; display: inline-block; }
         button { background: #ff5722; border: none; padding: 8px 20px; border-radius: 30px; color: white; cursor: pointer; margin-top: 10px; margin-left: 10px; }
+        button:hover { opacity: 0.9; }
+        
+        .players-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .player-card {
+            background: rgba(30,30,50,0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 30px;
+            padding: 15px;
+            border: 1px solid rgba(255,180,70,0.5);
+            transition: 0.2s;
+        }
+        .player-card.finished { border-color: #4caf50; background: rgba(40,60,40,0.8); }
+        .player-header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+        .player-avatar { width: 55px; height: 55px; border-radius: 50%; object-fit: cover; border: 2px solid gold; }
+        .player-name { font-size: 1.2rem; font-weight: bold; color: white; }
+        .player-stats { display: flex; justify-content: space-between; margin-top: 8px; color: #ddd; }
+        .score { color: #ffd700; font-size: 1.2rem; font-weight: bold; }
+        .status.finished { color: #4caf50; }
+        .status.playing { color: #ff9800; }
+        
         .leaderboard-panel {
             background: rgba(0,0,0,0.6);
             border-radius: 40px;
@@ -53,7 +72,7 @@
             align-items: center;
             gap: 12px;
             color: white;
-            font-size: 1.1rem;
+            font-size: 1rem;
         }
         .rank-1 { background: linear-gradient(90deg, #ffd700, #ffaa00); color: #1a1a2a; }
         .rank-2 { background: linear-gradient(90deg, #c0c0c0, #a0a0a0); }
@@ -62,21 +81,12 @@
             text-align: center;
             padding: 30px;
             color: #aaa;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
         }
-        .footer-note {
-            text-align: center;
-            margin-top: 30px;
-            color: rgba(255,255,255,0.5);
-            font-size: 0.8rem;
-        }
+        .footer-note { text-align: center; margin-top: 30px; color: rgba(255,255,255,0.5); font-size: 0.8rem; }
         .refresh-btn { background: #2196f3; }
-        .auto-refresh {
-            text-align: center;
-            margin-top: 10px;
-            font-size: 0.7rem;
-            color: #4caf50;
-        }
+        .auto-refresh { text-align: center; margin-top: 10px; font-size: 0.7rem; color: #4caf50; }
+        .player-emoji { font-size: 1.3rem; margin-right: 5px; }
     </style>
 </head>
 <body>
@@ -90,24 +100,33 @@
         </div>
         <div class="game-link" id="gameLink">🔗 https://marikalin19.github.io/game/</div>
         <button id="copyLinkBtn">📋 Копировать ссылку</button>
-        <button id="refreshBtn" class="refresh-btn">🔄 Обновить рейтинг</button>
+        <button id="refreshBtn" class="refresh-btn">🔄 Обновить</button>
+    </div>
+    
+    <h2>👥 ИГРОКИ ОНЛАЙН <span id="playersCount" style="background:#4caf50; border-radius:20px; padding:2px 10px; font-size:0.7rem; margin-left:10px;">0</span></h2>
+    <div class="players-grid" id="playersGrid">
+        <div class="empty-list">⏳ Ожидание подключения игроков...</div>
     </div>
     
     <div class="leaderboard-panel">
-        <h2>📊 ТАБЛИЦА РЕЙТИНГА</h2>
+        <h2>📊 ТАБЛИЦА РЕЙТИНГА (ФИНИШ)</h2>
         <div id="leaderboardContainer">
             <div class="empty-list">Загрузка...</div>
         </div>
-        <div class="auto-refresh" id="autoRefreshStatus">🔄 Обновляется автоматически</div>
+        <div class="auto-refresh" id="autoRefreshStatus">🔄 Обновляется автоматически каждые 3 секунды</div>
     </div>
     <div class="footer-note">
-        📌 Результаты сохраняются автоматически после каждого финиша
+        📌 Результаты сохраняются после финиша. Откройте игру в той же сети, чтобы видеть игроков.
     </div>
 </div>
 
 <script>
     const GAME_URL = "https://marikalin19.github.io/game/";
     const STORAGE_KEY = "maze_leaderboard";
+    const PLAYERS_KEY = "maze_players";
+    
+    let currentPlayers = {};
+    let currentFinishOrder = [];
     
     function escapeHtml(str) { 
         if(!str) return '';
@@ -119,22 +138,71 @@
         }); 
     }
     
+    // Загрузка рейтинга из localStorage
     function loadLeaderboard() {
         const saved = localStorage.getItem(STORAGE_KEY);
-        let finishOrder = [];
         if(saved) {
             try {
-                finishOrder = JSON.parse(saved);
+                currentFinishOrder = JSON.parse(saved);
             } catch(e) {
-                console.warn("Ошибка парсинга", e);
+                console.warn("Ошибка парсинга рейтинга", e);
             }
         }
-        renderLeaderboard(finishOrder);
-        return finishOrder;
+        return currentFinishOrder;
     }
     
-    function renderLeaderboard(finishOrder) {
+    // Загрузка активных игроков из localStorage
+    function loadPlayers() {
+        const saved = localStorage.getItem(PLAYERS_KEY);
+        if(saved) {
+            try {
+                currentPlayers = JSON.parse(saved);
+            } catch(e) {
+                console.warn("Ошибка парсинга игроков", e);
+            }
+        }
+        return currentPlayers;
+    }
+    
+    // Сохранение игроков (вызывается из игры)
+    function savePlayers(players) {
+        localStorage.setItem(PLAYERS_KEY, JSON.stringify(players));
+    }
+    
+    function renderPlayers() {
+        const players = currentPlayers;
+        const playersGrid = document.getElementById('playersGrid');
+        const playersCountSpan = document.getElementById('playersCount');
+        const playersArray = Object.values(players);
+        
+        playersCountSpan.textContent = playersArray.length;
+        
+        if(playersArray.length === 0) {
+            playersGrid.innerHTML = '<div class="empty-list">👥 Нет активных игроков. Попросите отсканировать QR-код!</div>';
+            return;
+        }
+        
+        playersGrid.innerHTML = playersArray.map(p => `
+            <div class="player-card ${p.finished ? 'finished' : ''}">
+                <div class="player-header">
+                    <img class="player-avatar" src="${p.avatarUrl || 'https://cdn-icons-png.flaticon.com/512/4472/4472533.png'}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/4472/4472533.png'">
+                    <div>
+                        <div class="player-name"><span class="player-emoji">${p.emoji || '🧙'}</span> ${escapeHtml(p.name)}</div>
+                        <div style="font-size:0.75rem; opacity:0.7;">${p.finished ? `🏁 Финиш: ${p.finishPosition || '?'} место` : '🎯 В пути'}</div>
+                    </div>
+                </div>
+                <div class="player-stats">
+                    <span>⭐ <span class="score">${p.score || 0}</span> очков</span>
+                    <span class="status ${p.finished ? 'finished' : 'playing'}">${p.finished ? '✅ ФИНИШ' : '⏳ в игре'}</span>
+                </div>
+                <div style="font-size:0.7rem; opacity:0.6;">📍 Позиция: (${p.x || 1}, ${p.y || 1})</div>
+            </div>
+        `).join('');
+    }
+    
+    function renderLeaderboard() {
         const container = document.getElementById('leaderboardContainer');
+        const finishOrder = currentFinishOrder;
         
         if(!finishOrder || finishOrder.length === 0) {
             container.innerHTML = '<div class="empty-list">🏁 Пока нет результатов. Пройдите лабиринт до конца!</div>';
@@ -147,7 +215,7 @@
             <ul class="leaderboard-list">
                 ${sorted.map(p => `
                     <li class="${p.position === 1 ? 'rank-1' : p.position === 2 ? 'rank-2' : p.position === 3 ? 'rank-3' : ''}">
-                        <span style="font-size:1.4rem; min-width: 50px;">
+                        <span style="font-size:1.3rem; min-width: 50px;">
                             ${p.position === 1 ? '🥇' : p.position === 2 ? '🥈' : p.position === 3 ? '🥉' : `${p.position}.`}
                         </span>
                         <span style="font-size:1.2rem;">${p.emoji || '🧙'}</span>
@@ -160,41 +228,68 @@
         `;
     }
     
-    function refreshAndDisplay() {
-        const order = loadLeaderboard();
+    function refreshAll() {
+        loadLeaderboard();
+        loadPlayers();
+        renderPlayers();
+        renderLeaderboard();
+        
         const timestamp = new Date().toLocaleTimeString();
-        console.log(`[${timestamp}] Рейтинг обновлён, записей: ${order.length}`);
+        console.log(`[${timestamp}] Обновлено: игроков=${Object.keys(currentPlayers).length}, рейтинг=${currentFinishOrder.length}`);
+    }
+    
+    // Демо-игроки для теста (если нет реальных)
+    function addDemoPlayersIfEmpty() {
+        loadPlayers();
+        if(Object.keys(currentPlayers).length === 0) {
+            // Добавляем демо-игроков только для наглядности работы дашборда
+            // В реальности они будут заменены на настоящих
+            const demoPlayers = {
+                "demo_1": { name: "Мария", avatarUrl: "https://cdn-icons-png.flaticon.com/512/4472/4472533.png", color: "#8B5CF6", emoji: "🧙", x: 5, y: 7, score: 45, finished: false },
+                "demo_2": { name: "Алексей", avatarUrl: "https://cdn-icons-png.flaticon.com/512/4472/4472510.png", color: "#EF4444", emoji: "⚔️", x: 12, y: 3, score: 30, finished: false },
+                "demo_3": { name: "Елена", avatarUrl: "https://cdn-icons-png.flaticon.com/512/4472/4472516.png", color: "#10B981", emoji: "🏹", x: 8, y: 15, score: 60, finished: true, finishPosition: 1 }
+            };
+            savePlayers(demoPlayers);
+            const demoFinish = [
+                { position: 1, name: "Елена", emoji: "🏹", score: 60, time: 45000 },
+                { position: 2, name: "Мария", emoji: "🧙", score: 45, time: 72000 }
+            ];
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(demoFinish));
+            refreshAll();
+        }
     }
     
     function init() {
         document.getElementById('gameLink').innerHTML = `🔗 ${GAME_URL}`;
+        
         document.getElementById('copyLinkBtn')?.addEventListener('click', () => {
             navigator.clipboard.writeText(GAME_URL);
             alert('✅ Ссылка скопирована!');
         });
         
         document.getElementById('refreshBtn')?.addEventListener('click', () => {
-            refreshAndDisplay();
+            refreshAll();
             const statusDiv = document.getElementById('autoRefreshStatus');
-            statusDiv.innerHTML = '🔄 Рейтинг обновлён!';
+            statusDiv.innerHTML = '🔄 Данные обновлены!';
             setTimeout(() => {
                 statusDiv.innerHTML = '🔄 Обновляется автоматически каждые 3 секунды';
             }, 1500);
         });
         
         // Первая загрузка
-        refreshAndDisplay();
+        refreshAll();
+        addDemoPlayersIfEmpty(); // Для демонстрации, убрать если не нужно
         
         // Автообновление каждые 3 секунды
         setInterval(() => {
-            refreshAndDisplay();
+            refreshAll();
         }, 3000);
         
         // Слушаем изменения localStorage (если игра открыта в другой вкладке)
         window.addEventListener('storage', (e) => {
-            if(e.key === STORAGE_KEY) {
+            if(e.key === STORAGE_KEY || e.key === PLAYERS_KEY) {
                 console.log("Обнаружено изменение в другой вкладке!");
-                refreshAndDisplay();
+                refreshAll();
             }
         });
         
