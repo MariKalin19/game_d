@@ -809,7 +809,7 @@
     function renderWelcomeScreen() {
         appDiv.innerHTML = `
             <div class="screen">
-                <div class="ivsu-logo">🏛️ ИВГУ</div> 🏛️
+                <div class="ivsu-logo">🏛️ ИВГУ 🏛️</div> 
                 <h2>🔰 Мега-Лабиринт</h2>
                 <p>⭐ Монетки +10 | ❓ Вопросы +5 | ⚠️ Ловушки | ⚡ Ускорение</p>
                 <div><input type="text" id="playerName" placeholder="Ваше имя" maxlength="16"></div>
@@ -851,7 +851,7 @@
     function renderAvatarScreen() {
         appDiv.innerHTML = `
             <div class="screen">
-                <h2>🎨 ${players[localPlayerId]?.name}</h2>, выбери аватара
+                <h2>🎨 ${players[localPlayerId]?.name},</h2> выбери аватара
                 <div class="avatar-selector" id="avatarSelector">
                     ${AVATAR_LIST.map((a, idx) => `
                         <div class="avatar-option ${idx===0?'selected':''}" data-url="${a.imageUrl}" data-color="${a.color}" data-emoji="${a.emoji}">
