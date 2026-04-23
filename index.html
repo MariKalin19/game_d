@@ -851,7 +851,7 @@
     function renderAvatarScreen() {
         appDiv.innerHTML = `
             <div class="screen">
-                <h2>🎨 ${players[localPlayerId]?.name},</h2> выбери аватара
+                <h2>🎨 ${players[localPlayerId]?.name},</h2> выберите аватара
                 <div class="avatar-selector" id="avatarSelector">
                     ${AVATAR_LIST.map((a, idx) => `
                         <div class="avatar-option ${idx===0?'selected':''}" data-url="${a.imageUrl}" data-color="${a.color}" data-emoji="${a.emoji}">
