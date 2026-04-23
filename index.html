@@ -167,10 +167,13 @@
             align-items: center;
             gap: 10px;
             flex-wrap: wrap;
+            color: white !important;
         }
-        .rank-1 { background: linear-gradient(90deg, #ffd700, #ffaa00); color: #1a1a2a; }
-        .rank-2 { background: linear-gradient(90deg, #c0c0c0, #a0a0a0); }
-        .rank-3 { background: linear-gradient(90deg, #cd7f32, #b8692a); }
+        .rank-1 { background: linear-gradient(90deg, #ffd700, #ffaa00); color: #1a1a2a !important; }
+        .rank-2 { background: linear-gradient(90deg, #c0c0c0, #a0a0a0); color: #1a1a2a !important; }
+        .rank-3 { background: linear-gradient(90deg, #cd7f32, #b8692a); color: white !important; }
+        .rank-1 span, .rank-2 span { color: #1a1a2a !important; }
+        .rank-3 span { color: white !important; }
 
         .countdown {
             font-size: 4rem;
@@ -370,10 +373,27 @@
     let finishOrder = [];
     let currentScreen = 'welcome';
     let appDiv;
-    let gameStateBeforeRating = null; // Для возврата в игру
+    let gameStateBeforeRating = null;
 
     function saveLeaderboard() {
         localStorage.setItem('maze_leaderboard', JSON.stringify(finishOrder));
+        // Также сохраняем информацию об игроке для дашборда
+        const playerData = players[localPlayerId];
+        if(playerData) {
+            const allPlayers = {};
+            allPlayers[localPlayerId] = {
+                name: playerData.name,
+                avatarUrl: playerData.avatarUrl,
+                color: playerData.color,
+                emoji: playerData.emoji,
+                x: playerData.x,
+                y: playerData.y,
+                score: playerData.score,
+                finished: playerData.finished,
+                finishPosition: playerData.finishPosition
+            };
+            localStorage.setItem('maze_players', JSON.stringify(allPlayers));
+        }
     }
 
     function loadLeaderboard() {
@@ -576,7 +596,6 @@
         }
     }
 
-    // Сохраняем состояние игры перед просмотром рейтинга
     function saveGameState() {
         if (gameActive && players[localPlayerId] && !players[localPlayerId].finished) {
             gameStateBeforeRating = {
@@ -587,7 +606,6 @@
         }
     }
 
-    // Возвращаемся в игру
     function resumeGame() {
         if (gameStateBeforeRating && gameStateBeforeRating.gameActive && !gameStateBeforeRating.player.finished) {
             gameActive = true;
@@ -597,7 +615,6 @@
             renderGameScreen();
             gameStateBeforeRating = null;
         } else {
-            // Если нет сохранённой игры, просто перезагружаем
             location.reload();
         }
     }
@@ -609,17 +626,17 @@
         
         appDiv.innerHTML = `
             <div class="screen">
-                <h2>🏆 ТАБЛИЦА РЕЙТИНГА 🏆</h2>
+                <h2 style="color:#ffd700;">🏆 ТАБЛИЦА РЕЙТИНГА 🏆</h2>
                 <div class="leaderboard">
                     <ol>
                         ${sorted.length > 0 ? sorted.map(p => `
-                            <li class="${p.position === 1 ? 'rank-1' : p.position === 2 ? 'rank-2' : p.position === 3 ? 'rank-3' : ''}">
-                                <strong>${p.position}. место</strong> 
-                                <span>${p.emoji || '🧙'} ${p.name}</span>
-                                <span>⭐ ${p.score} очков</span>
-                                <span>⏱️ ${(p.time/1000).toFixed(1)}с</span>
+                            <li class="${p.position === 1 ? 'rank-1' : p.position === 2 ? 'rank-2' : p.position === 3 ? 'rank-3' : ''}" style="color: ${p.position === 1 || p.position === 2 ? '#1a1a2a' : 'white'} !important;">
+                                <strong style="color: inherit;">${p.position}. место</strong> 
+                                <span style="color: inherit;">${p.emoji || '🧙'} ${p.name}</span>
+                                <span style="color: #ffd700;">⭐ ${p.score} очков</span>
+                                <span style="color: inherit;">⏱️ ${(p.time/1000).toFixed(1)}с</span>
                             </li>
-                        `).join('') : '<li style="justify-content:center;">Пока нет результатов</li>'}
+                        `).join('') : '<li style="justify-content:center; color:white;">Пока нет результатов</li>'}
                     </ol>
                 </div>
                 <div style="display:flex; gap:15px; justify-content:center; flex-wrap:wrap;">
@@ -640,6 +657,40 @@
         });
         document.getElementById('menuFromRatingBtn')?.addEventListener('click', () => {
             window.location.reload();
+        });
+    }
+
+    function showGlobalLeaderboard() {
+        const sorted = [...finishOrder].sort((a,b) => a.position - b.position);
+        appDiv.innerHTML = `
+            <div class="screen">
+                <h2 style="color:#ffd700;">🏆 ОБЩИЙ РЕЙТИНГ 🏆</h2>
+                <div class="leaderboard">
+                    <ol>
+                        ${sorted.map(p => `
+                            <li class="${p.position === 1 ? 'rank-1' : p.position === 2 ? 'rank-2' : p.position === 3 ? 'rank-3' : ''}" style="color: ${p.position === 1 || p.position === 2 ? '#1a1a2a' : 'white'} !important;">
+                                <strong style="color: inherit;">${p.position}. место</strong> 
+                                <span style="color: inherit;">${p.emoji || '🧙'} ${p.name}</span>
+                                <span style="color: #ffd700;">⭐ ${p.score} очков</span>
+                                <span style="color: inherit;">⏱️ ${(p.time/1000).toFixed(1)}с</span>
+                            </li>
+                        `).join('')}
+                    </ol>
+                </div>
+                <div class="rating-link">
+                    📊 <a href="#" id="showRatingLink" style="color:#ffaa44;">Посмотреть таблицу рейтинга</a>
+                </div>
+                <div style="display:flex; gap:15px; justify-content:center; margin-top:10px;">
+                    <button id="restartBtn">🔄 Сыграть снова</button>
+                    <button id="menuBtn">🏠 Меню</button>
+                </div>
+            </div>
+        `;
+        document.getElementById('restartBtn')?.addEventListener('click', () => { resetAndRestart(); });
+        document.getElementById('menuBtn')?.addEventListener('click', () => { window.location.reload(); });
+        document.getElementById('showRatingLink')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            showRatingOnly();
         });
     }
 
