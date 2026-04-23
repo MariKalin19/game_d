@@ -136,8 +136,8 @@
         }
         .avatar-option {
             width: 75px;
-            height: 75px;
-            border-radius: 50%;
+            height: 85px;
+            border-radius: 50px;
             cursor: pointer;
             border: 3px solid white;
             transition: 0.2s;
@@ -147,6 +147,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            padding: 8px;
         }
         .avatar-option img { width: 45px; height: 45px; object-fit: cover; border-radius: 50%; }
         .avatar-option span { font-size: 1.3rem; margin-top: 2px; }
@@ -263,17 +264,23 @@
         appId: "1:159790344496:web:307d3ebeae6da4596b00f5"
     };
     
-    let db, roomRef, playersRef;
+    let db = null;
+    let roomRef = null;
+    let playersRef = null;
     let firebaseReady = false;
     
+    // Инициализация Firebase
     try {
-        firebase.initializeApp(firebaseConfig);
-        db = firebase.database();
-        firebaseReady = true;
-        console.log("✅ Firebase подключен");
+        if (typeof firebase !== 'undefined') {
+            const app = firebase.initializeApp(firebaseConfig);
+            db = firebase.database();
+            firebaseReady = true;
+            console.log("✅ Firebase подключен");
+        } else {
+            console.warn("Firebase SDK не загружен");
+        }
     } catch(e) {
         console.error("❌ Ошибка Firebase:", e);
-        alert("Ошибка подключения к серверу. Игра будет работать без мультиплеера.");
     }
     
     // ========== НАСТРОЙКИ ИГРЫ ==========
@@ -281,17 +288,15 @@
     const CELL_SIZE = 26;
     const ROOM_ID = "ivgu_maze_2025";
 
-    // Красивые аватары
     const AVATAR_LIST = [
-        { id: 1, name: "Маг", imageUrl: "https://cdn-icons-png.flaticon.com/512/1995/1995572.png", color: "#8B5CF6", emoji: "🧙" },
-        { id: 2, name: "Воин", imageUrl: "https://cdn-icons-png.flaticon.com/512/1995/1995576.png", color: "#EF4444", emoji: "⚔️" },
-        { id: 3, name: "Эльф", imageUrl: "https://cdn-icons-png.flaticon.com/512/3135/3135715.png", color: "#10B981", emoji: "🏹" },
-        { id: 4, name: "Гном", imageUrl: "https://cdn-icons-png.flaticon.com/512/2881/2881142.png", color: "#F59E0B", emoji: "⛏️" },
-        { id: 5, name: "Некромант", imageUrl: "https://cdn-icons-png.flaticon.com/512/1995/1995612.png", color: "#8B5CF6", emoji: "💀" },
-        { id: 6, name: "Паладин", imageUrl: "https://cdn-icons-png.flaticon.com/512/1055/1055687.png", color: "#3B82F6", emoji: "🛡️" }
+        { id: 1, name: "Маг", imageUrl: "https://pic.rtbcdn.ru/video/2026-03-03/50/02/50020fcd78f106f1fbcd13a417ea456c.jpg", color: "#8B5CF6", emoji: "🧙" },
+        { id: 2, name: "Воин", imageUrl: "https://i.pinimg.com/736x/b0/62/c0/b062c0839970c5a25ab0fe88cb185661.jpg", color: "#EF4444", emoji: "⚔️" },
+        { id: 3, name: "Эльф", imageUrl: "https://avatars.mds.yandex.net/i?id=5eca1a4c62663c8526e15cfb883bf151_l-5405548-images-thumbs&n=13", color: "#10B981", emoji: "🏹" },
+        { id: 4, name: "Гном", imageUrl: "https://i.pinimg.com/originals/4a/03/e1/4a03e179422ceb1284f97f0e9bdc3bb9.jpg", color: "#F59E0B", emoji: "⛏️" },
+        { id: 5, name: "Некромант", imageUrl: "https://i.pinimg.com/originals/1f/ed/15/1fed15dcb1fbc206902322db3335212e.jpg?nii=t", color: "#A855F7", emoji: "💀" },
+        { id: 6, name: "Паладин", imageUrl: "https://i.pinimg.com/736x/ed/0c/b8/ed0cb8dc4b2c6c795b42b8a65e4087eb.jpg", color: "#3B82F6", emoji: "🛡️" }
     ];
 
-    // Вопросы
     const questionsBank = [
         { text: "💾 Что из перечисленного является оперативной памятью?", options: ["Жесткий диск", "SSD-накопитель", "RAM", "Процессор"], correct: 2 },
         { text: "🔢 Сколько бит в одном байте?", options: ["2", "8", "16", "1024"], correct: 1 },
@@ -311,28 +316,35 @@
         return { ...questionsBank[Math.floor(Math.random() * questionsBank.length)], id: Date.now() + Math.random() }; 
     }
 
-    // Генерация лабиринта (без телепортов)
+    // Генерация лабиринта
     function generateMaze(size) {
         let maze = Array(size).fill().map(() => Array(size).fill(1));
         function carve(x, y) {
             let dirs = [[0, -2], [2, 0], [0, 2], [-2, 0]];
-            for (let i = dirs.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [dirs[i], dirs[j]] = [dirs[j], dirs[i]]; }
+            for (let i = dirs.length - 1; i > 0; i--) { 
+                const j = Math.floor(Math.random() * (i + 1)); 
+                [dirs[i], dirs[j]] = [dirs[j], dirs[i]]; 
+            }
             for (let [dx, dy] of dirs) {
                 const nx = x + dx, ny = y + dy;
                 if (nx > 0 && nx < size-1 && ny > 0 && ny < size-1 && maze[ny][nx] === 1) {
-                    maze[ny][nx] = 0; maze[y + dy/2][x + dx/2] = 0; carve(nx, ny);
+                    maze[ny][nx] = 0;
+                    maze[y + dy/2][x + dx/2] = 0;
+                    carve(nx, ny);
                 }
             }
         }
-        maze[1][1] = 0; carve(1, 1);
-        maze[size-2][size-2] = 0; maze[size-2][size-3] = 0; maze[size-3][size-2] = 0;
+        maze[1][1] = 0;
+        carve(1, 1);
+        maze[size-2][size-2] = 0;
+        maze[size-2][size-3] = 0;
+        maze[size-3][size-2] = 0;
         return maze;
     }
 
     let baseMaze = generateMaze(MAZE_SIZE);
     baseMaze[MAZE_SIZE-2][MAZE_SIZE-2] = 4;
 
-    // Декорирование предметами (без телепортов)
     function decorateMazeWithItems(maze) {
         let newMaze = maze.map(row => [...row]);
         let positions = [];
@@ -341,17 +353,27 @@
                 if(newMaze[y][x] === 0) positions.push([x, y]);
             }
         }
-        for(let i = positions.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [positions[i], positions[j]] = [positions[j], positions[i]]; }
+        for(let i = positions.length - 1; i > 0; i--) { 
+            const j = Math.floor(Math.random() * (i + 1)); 
+            [positions[i], positions[j]] = [positions[j], positions[i]]; 
+        }
         
-        // Монетки (40 штук)
-        for(let i = 0; i < 45 && i < positions.length; i++) { const [x,y] = positions[i]; if(newMaze[y][x] === 0) newMaze[y][x] = 2; }
-        // Вопросы (25 штук)
-        for(let i = 45; i < 75 && i < positions.length; i++) { const [x,y] = positions[i]; if(newMaze[y][x] === 0) newMaze[y][x] = 3; }
-        // Ловушки (10 штук)
-        for(let i = 75; i < 90 && i < positions.length; i++) { const [x,y] = positions[i]; if(newMaze[y][x] === 0) newMaze[y][x] = 5; }
-        // Ускорения (8 штук)
-        for(let i = 90; i < 100 && i < positions.length; i++) { const [x,y] = positions[i]; if(newMaze[y][x] === 0) newMaze[y][x] = 6; }
-        
+        for(let i = 0; i < 45 && i < positions.length; i++) { 
+            const [x,y] = positions[i]; 
+            if(newMaze[y][x] === 0) newMaze[y][x] = 2; 
+        }
+        for(let i = 45; i < 75 && i < positions.length; i++) { 
+            const [x,y] = positions[i]; 
+            if(newMaze[y][x] === 0) newMaze[y][x] = 3; 
+        }
+        for(let i = 75; i < 90 && i < positions.length; i++) { 
+            const [x,y] = positions[i]; 
+            if(newMaze[y][x] === 0) newMaze[y][x] = 5; 
+        }
+        for(let i = 90; i < 100 && i < positions.length; i++) { 
+            const [x,y] = positions[i]; 
+            if(newMaze[y][x] === 0) newMaze[y][x] = 6; 
+        }
         return newMaze;
     }
 
@@ -363,10 +385,12 @@
     let finishOrder = [];
     let currentScreen = 'welcome';
     let appDiv;
+    let playersListener = null;
+    let finishListener = null;
 
-    // Синхронизация с Firebase
+    // Функции синхронизации
     function syncPlayerToFirebase() {
-        if (!firebaseReady || !localPlayerId || !players[localPlayerId]) return;
+        if (!firebaseReady || !localPlayerId || !players[localPlayerId] || !playersRef) return;
         const player = players[localPlayerId];
         playersRef.child(localPlayerId).set({
             name: player.name,
@@ -377,15 +401,15 @@
             y: player.y,
             score: player.score,
             finished: player.finished,
-            finishTime: player.finishTime,
-            finishPosition: player.finishPosition,
+            finishTime: player.finishTime || null,
+            finishPosition: player.finishPosition || null,
             lastUpdate: Date.now()
-        });
+        }).catch(e => console.warn("Sync error:", e));
     }
     
     function syncFinishOrder() {
-        if (!firebaseReady) return;
-        roomRef.child('finishOrder').set(finishOrder);
+        if (!firebaseReady || !roomRef) return;
+        roomRef.child('finishOrder').set(finishOrder).catch(e => console.warn("Finish order error:", e));
     }
 
     function createEffect(x, y, text, color) {
@@ -425,7 +449,9 @@
                     ctx.fillRect(px+2, py+2, CELL_SIZE-5, CELL_SIZE-5);
                 } else if(cell === 2) {
                     ctx.fillStyle = "#f7d44a";
-                    ctx.beginPath(); ctx.arc(px + CELL_SIZE/2, py + CELL_SIZE/2, 8, 0, 2*Math.PI); ctx.fill();
+                    ctx.beginPath(); 
+                    ctx.arc(px + CELL_SIZE/2, py + CELL_SIZE/2, 8, 0, 2*Math.PI); 
+                    ctx.fill();
                     ctx.fillStyle = "#b8860b";
                     ctx.font = "14px sans-serif";
                     ctx.fillText("⭐", px+7, py+15);
@@ -463,30 +489,35 @@
             }
         }
         
-        // Рисуем других игроков
         for(let pid in players) {
             const p = players[pid];
             if(p && !p.finished && pid !== localPlayerId) {
                 ctx.fillStyle = p.color;
-                ctx.beginPath(); ctx.arc(p.x * CELL_SIZE + CELL_SIZE/2, p.y * CELL_SIZE + CELL_SIZE/2, 10, 0, 2*Math.PI); ctx.fill();
+                ctx.beginPath(); 
+                ctx.arc(p.x * CELL_SIZE + CELL_SIZE/2, p.y * CELL_SIZE + CELL_SIZE/2, 10, 0, 2*Math.PI); 
+                ctx.fill();
                 ctx.font = "16px sans-serif";
                 ctx.fillStyle = "white";
                 ctx.fillText(p.emoji || "🧙", p.x * CELL_SIZE + 8, p.y * CELL_SIZE + 18);
                 ctx.strokeStyle = "#fff";
                 ctx.lineWidth = 1.5;
-                ctx.beginPath(); ctx.arc(p.x * CELL_SIZE + CELL_SIZE/2, p.y * CELL_SIZE + CELL_SIZE/2, 12, 0, 2*Math.PI); ctx.stroke();
+                ctx.beginPath(); 
+                ctx.arc(p.x * CELL_SIZE + CELL_SIZE/2, p.y * CELL_SIZE + CELL_SIZE/2, 12, 0, 2*Math.PI); 
+                ctx.stroke();
             }
         }
         
-        // Рисуем локального игрока
         const localP = players[localPlayerId];
         if(localP && !localP.finished) {
             ctx.fillStyle = localP.color;
-            ctx.beginPath(); ctx.arc(localP.x * CELL_SIZE + CELL_SIZE/2, localP.y * CELL_SIZE + CELL_SIZE/2, 12, 0, 2*Math.PI); ctx.fill();
+            ctx.beginPath(); 
+            ctx.arc(localP.x * CELL_SIZE + CELL_SIZE/2, localP.y * CELL_SIZE + CELL_SIZE/2, 12, 0, 2*Math.PI); 
+            ctx.fill();
             ctx.font = "18px sans-serif";
             ctx.fillStyle = "white";
             ctx.fillText(localP.emoji || "🧙", localP.x * CELL_SIZE + 8, localP.y * CELL_SIZE + 20);
-            ctx.beginPath(); ctx.arc(localP.x * CELL_SIZE + CELL_SIZE/2, localP.y * CELL_SIZE + CELL_SIZE/2, 14, 0, 2*Math.PI);
+            ctx.beginPath(); 
+            ctx.arc(localP.x * CELL_SIZE + CELL_SIZE/2, localP.y * CELL_SIZE + CELL_SIZE/2, 14, 0, 2*Math.PI);
             ctx.strokeStyle = "gold";
             ctx.lineWidth = 3;
             ctx.stroke();
@@ -494,19 +525,27 @@
     }
 
     function showQuestionModal(player, question) {
-        const modal = document.createElement('div'); modal.className = 'question-modal';
-        const card = document.createElement('div'); card.className = 'question-card';
+        const modal = document.createElement('div'); 
+        modal.className = 'question-modal';
+        const card = document.createElement('div'); 
+        card.className = 'question-card';
         card.innerHTML = `<h3>❓ ${question.text}</h3><div id="qOptions"></div><p id="qFeedback" style="margin-top:10px; font-weight:bold;"></p>`;
-        modal.appendChild(card); document.body.appendChild(modal);
+        modal.appendChild(card); 
+        document.body.appendChild(modal);
         const optsDiv = card.querySelector('#qOptions');
         question.options.forEach((opt, idx) => {
-            const btn = document.createElement('button'); btn.textContent = opt; btn.className = 'question-option';
+            const btn = document.createElement('button'); 
+            btn.textContent = opt; 
+            btn.className = 'question-option';
             btn.onclick = () => {
                 if(idx === question.correct) {
-                    player.score += 5; player.hasPendingQuestion = false;
+                    player.score += 5; 
+                    player.hasPendingQuestion = false;
                     if(gameMaze[player.y][player.x] === 3) gameMaze[player.y][player.x] = 0;
-                    document.body.removeChild(modal); createEffect(player.x, player.y, "+5", "#2ecc71");
-                    refreshUI(); syncPlayerToFirebase();
+                    document.body.removeChild(modal); 
+                    createEffect(player.x, player.y, "+5", "#2ecc71");
+                    refreshUI(); 
+                    syncPlayerToFirebase();
                 } else {
                     const fb = card.querySelector('#qFeedback');
                     fb.innerHTML = '❌ Неправильно! Попробуй ещё раз';
@@ -526,7 +565,8 @@
         if(newX < 0 || newX >= MAZE_SIZE || newY < 0 || newY >= MAZE_SIZE) return false;
         const cell = gameMaze[newY][newX];
         if(cell === 1) return false;
-        p.x = newX; p.y = newY;
+        p.x = newX; 
+        p.y = newY;
         
         if(cell === 2) { 
             p.score += 10; 
@@ -550,10 +590,15 @@
                 emoji: p.emoji
             });
             createEffect(newX, newY, "🏆 ФИНИШ!", "#ffd700");
-            refreshUI(); syncPlayerToFirebase(); syncFinishOrder();
+            refreshUI(); 
+            syncPlayerToFirebase(); 
+            syncFinishOrder();
             setTimeout(() => {
                 const allFinished = Object.values(players).every(p => p.finished === true);
-                if(allFinished) { gameActive = false; showGlobalLeaderboard(); }
+                if(allFinished) { 
+                    gameActive = false; 
+                    showGlobalLeaderboard(); 
+                }
             }, 600);
         }
         else if(cell === 5) { 
@@ -564,13 +609,17 @@
             createEffect(newX, newY, "⚡ УСКОРЕНИЕ", "#44ff44"); 
             gameMaze[newY][newX] = 0; 
         }
-        refreshUI(); syncPlayerToFirebase();
+        refreshUI(); 
+        syncPlayerToFirebase();
         return true;
     }
 
     function refreshUI() {
         const canvas = document.getElementById('gameCanvas');
-        if(canvas && currentScreen === 'game') { drawGame(canvas.getContext('2d')); }
+        if(canvas && currentScreen === 'game') { 
+            const ctx = canvas.getContext('2d');
+            drawGame(ctx); 
+        }
         const status = document.getElementById('gameStatus');
         const p = players[localPlayerId];
         if(status && p) {
@@ -596,7 +645,7 @@
                         `).join('')}
                     </ol>
                 </div>
-                <div class="flex-row" style="display:flex; gap:15px; justify-content:center;">
+                <div style="display:flex; gap:15px; justify-content:center;">
                     <button id="restartBtn">🔄 Сыграть снова</button>
                     <button id="menuBtn">🏠 Меню</button>
                 </div>
@@ -609,31 +658,57 @@
     function resetAndRestart() {
         gameActive = false;
         const p = players[localPlayerId];
-        players = {}; finishOrder = [];
+        players = {}; 
+        finishOrder = [];
         gameMaze = decorateMazeWithItems(baseMaze);
         if(p) { 
             p.x = 1; p.y = 1; p.score = 0; p.finished = false; 
             p.finishTime = null; p.hasPendingQuestion = false; p.frozenUntil = null; 
             players[localPlayerId] = p; 
         }
-        if(firebaseReady) {
-            // Очищаем всех игроков в комнате
+        if(firebaseReady && playersRef) {
             playersRef.set({});
-            roomRef.child('finishOrder').set([]);
+            if(roomRef) roomRef.child('finishOrder').set([]);
         }
         startCountdown();
     }
 
+    // Функция для очистки старых игроков
+    function cleanupOldPlayers() {
+        if (!firebaseReady || !playersRef) return;
+        playersRef.once('value', (snapshot) => {
+            const data = snapshot.val();
+            const now = Date.now();
+            if(data) {
+                for(let id in data) {
+                    if(data[id].lastUpdate && now - data[id].lastUpdate > 30000) {
+                        playersRef.child(id).remove();
+                    }
+                }
+            }
+        });
+    }
+
     function startRace() {
-        gameActive = true; raceStartTime = Date.now(); finishOrder = [];
+        gameActive = true; 
+        raceStartTime = Date.now(); 
+        finishOrder = [];
         for(let id in players) { 
-            players[id].x = 1; players[id].y = 1; players[id].finished = false; 
-            players[id].score = 0; players[id].finishTime = null; 
-            players[id].hasPendingQuestion = false; players[id].frozenUntil = null; 
+            players[id].x = 1; 
+            players[id].y = 1; 
+            players[id].finished = false; 
+            players[id].score = 0; 
+            players[id].finishTime = null; 
+            players[id].hasPendingQuestion = false; 
+            players[id].frozenUntil = null; 
         }
         gameMaze = decorateMazeWithItems(baseMaze);
-        currentScreen = 'game'; renderGameScreen(); 
-        if(firebaseReady) { syncPlayerToFirebase(); }
+        currentScreen = 'game'; 
+        renderGameScreen(); 
+        if(firebaseReady) { 
+            syncPlayerToFirebase();
+            cleanupOldPlayers();
+        }
     }
 
     function startCountdown() {
@@ -646,160 +721,33 @@
             const interval = setInterval(() => {
                 count--;
                 if(count >= 1) container.innerHTML = `<div class="countdown">${count}</div>`;
-                else if(count === 0) { clearInterval(interval); container.innerHTML = ''; startRace(); }
+                else if(count === 0) { 
+                    clearInterval(interval); 
+                    container.innerHTML = ''; 
+                    startRace(); 
+                }
             }, 1000);
         }, 50);
     }
 
-    function renderGameScreen() {
-        const p = players[localPlayerId];
-        appDiv.innerHTML = `
-            <div class="game-container">
-                <div class="game-header">
-                    <div class="player-name-badge">
-                        <img class="player-avatar-large" src="${p?.avatarUrl || ''}">
-                        <span>${p?.name || 'Игрок'} ${p?.emoji || '🧙'}</span>
-                    </div>
-                    <div class="stats-badge" id="gameStatus">⭐ 0 очков</div>
-                </div>
-                <div id="gameContainerDiv"><canvas id="gameCanvas" width="${MAZE_SIZE * CELL_SIZE}" height="${MAZE_SIZE * CELL_SIZE}"></canvas></div>
-                <div class="touch-controls">
-                    <div class="touch-btn" data-dx="0" data-dy="-1">▲</div>
-                    <div class="touch-btn" data-dx="-1" data-dy="0">◀</div>
-                    <div class="touch-btn" data-dx="0" data-dy="1">▼</div>
-                    <div class="touch-btn" data-dx="1" data-dy="0">▶</div>
-                </div>
-                <p style="color:white; margin-top:8px; text-align:center; font-size:0.7rem;">⭐ монетка +10 | ❓ вопрос +5 | ⚠️ заморозка | ⚡ ускорение</p>
-            </div>
-        `;
-        document.querySelectorAll('.touch-btn').forEach(btn => {
-            const dx = parseInt(btn.dataset.dx), dy = parseInt(btn.dataset.dy);
-            const handler = (e) => { e.preventDefault(); tryMove(dx, dy); };
-            btn.addEventListener('click', handler); btn.addEventListener('touchstart', handler, { passive: false });
-        });
-        refreshUI();
-    }
-
-    function renderWelcomeScreen() {
-        appDiv.innerHTML = `
-            <div class="screen">
-                <div class="ivsu-logo">🏛️ ИВГУ</div>
-                <h2>🔰 Мега-Лабиринт</h2>
-                <p>⭐ Монетки +10 | ❓ Вопросы +5 | ⚠️ Ловушки | ⚡ Ускорение</p>
-                <div><input type="text" id="playerName" placeholder="Твой никнейм" maxlength="16"></div>
-                <button id="toAvatar">🎮 Выбрать аватара</button>
-            </div>
-        `;
-        document.getElementById('toAvatar')?.addEventListener('click', () => {
-            const name = document.getElementById('playerName').value.trim();
-            if(!name) return alert("Введите имя!");
-            localPlayerId = "player_" + Date.now() + "_" + Math.random().toString(36).substr(2, 6);
-            const img = new Image(); img.src = AVATAR_LIST[0].imageUrl;
-            players[localPlayerId] = { 
-                name, avatarUrl: AVATAR_LIST[0].imageUrl, color: AVATAR_LIST[0].color, emoji: AVATAR_LIST[0].emoji,
-                x: 1, y: 1, score: 0, finished: false, finishTime: null, 
-                hasPendingQuestion: false, frozenUntil: null, avatarImg: img 
-            };
-            currentScreen = 'avatarPick'; renderAvatarScreen();
-        });
-    }
-
-    function renderAvatarScreen() {
-        appDiv.innerHTML = `
-            <div class="screen">
-                <h2>🎨 Выбери аватара, ${players[localPlayerId]?.name}</h2>
-                <div class="avatar-selector" id="avatarSelector">
-                    ${AVATAR_LIST.map((a, idx) => `
-                        <div class="avatar-option ${idx===0?'selected':''}" data-url="${a.imageUrl}" data-color="${a.color}" data-emoji="${a.emoji}">
-                            <img src="${a.imageUrl}">
-                            <span>${a.emoji}</span>
-                        </div>
-                    `).join('')}
-                </div>
-                <button id="startBtn">🏁 Начать гонку!</button>
-            </div>
-        `;
-        let selected = AVATAR_LIST[0];
-        document.querySelectorAll('.avatar-option').forEach(opt => {
-            opt.addEventListener('click', () => {
-                document.querySelectorAll('.avatar-option').forEach(o => o.classList.remove('selected'));
-                opt.classList.add('selected');
-                selected = { imageUrl: opt.dataset.url, color: opt.dataset.color, emoji: opt.dataset.emoji };
-            });
-        });
-        document.getElementById('startBtn')?.addEventListener('click', () => {
-            players[localPlayerId].avatarUrl = selected.imageUrl; 
-            players[localPlayerId].color = selected.color;
-            players[localPlayerId].emoji = selected.emoji;
-            const img = new Image(); img.src = selected.imageUrl; players[localPlayerId].avatarImg = img;
-            
-            if(firebaseReady) {
-                roomRef = db.ref(`rooms/${ROOM_ID}`);
-                playersRef = roomRef.child('players');
-                
-                // При подключении очищаем старых неактивных игроков (старше 30 секунд)
-                playersRef.once('value', (snapshot) => {
-                    const data = snapshot.val();
-                    const now = Date.now();
-                    if(data) {
-                        for(let id in data) {
-                            if(data[id].lastUpdate && now - data[id].lastUpdate > 30000) {
-                                playersRef.child(id).remove();
-                            }
-                        }
-                    }
-                });
-                
-                syncPlayerToFirebase();
-                
-                // Слушаем других игроков
-                playersRef.on('value', (snapshot) => {
-                    const data = snapshot.val();
-                    if(data) {
-                        // Удаляем старых игроков
-                        const now = Date.now();
-                        for(let id in data) {
-                            if(id !== localPlayerId && data[id] && data[id].lastUpdate && now - data[id].lastUpdate > 30000) {
-                                playersRef.child(id).remove();
-                                delete players[id];
-                            }
-                        }
-                        for(let id in data) {
-                            if(id !== localPlayerId && data[id] && (!players[id] || players[id].finished === false)) {
-                                if(!players[id]) players[id] = {};
-                                players[id].name = data[id].name;
-                                players[id].avatarUrl = data[id].avatarUrl;
-                                players[id].color = data[id].color;
-                                players[id].emoji = data[id].emoji || '🧙';
-                                players[id].x = data[id].x || 1;
-                                players[id].y = data[id].y || 1;
-                                players[id].score = data[id].score || 0;
-                                players[id].finished = data[id].finished || false;
-                                if(!players[id].avatarImg) {
-                                    const newImg = new Image();
-                                    newImg.src = data[id].avatarUrl;
-                                    players[id].avatarImg = newImg;
-                                }
-                            }
-                        }
-                        refreshUI();
-                    }
-                });
-                
-                roomRef.child('finishOrder').on('value', (snapshot) => {
-                    const data = snapshot.val();
-                    if(data) finishOrder = data;
-                });
-            }
-            startCountdown();
-        });
-    }
-
-    function init() {
-        appDiv = document.getElementById('app');
-        renderWelcomeScreen();
-    }
-    init();
-</script>
-</body>
-</html>
+    function setupFirebaseListeners() {
+        if (!firebaseReady || !playersRef) return;
+        
+        // Удаляем старых игроков при старте
+        cleanupOldPlayers();
+        
+        // Слушаем других игроков
+        if (playersListener) playersListener.off();
+        playersListener = playersRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            if(data) {
+                for(let id in data) {
+                    if(id !== localPlayerId && data[id]) {
+                        if(!players[id]) players[id] = {};
+                        players[id].name = data[id].name;
+                        players[id].avatarUrl = data[id].avatarUrl;
+                        players[id].color = data[id].color;
+                        players[id].emoji = data[id].emoji || '🧙';
+                        players[id].x = data[id].x || 1;
+                        players[id].y = data[id].y || 1;
+                        players[id
