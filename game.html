@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Undertale University - Игра</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+        
+        body {
+            background: #1a1a2e;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .game-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .stats-bar {
+            background: #16213e;
+            padding: 12px;
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 2px solid #e94560;
+            font-size: 14px;
+            font-weight: bold;
+            flex-wrap: wrap;
+        }
+        
+        .stats-text {
+            color: white;
+        }
+        
+        .canvas-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #1a1a2e;
+            overflow: auto;
+        }
+        
+        canvas {
+            border: 2px solid #e94560;
+            border-radius: 8px;
+            cursor: pointer;
+            max-width: 95%;
+            max-height: 95%;
+        }
+        
+        @media (max-width: 768px) {
+            .stats-text { font-size: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="stats-bar">
+            <span class="stats-text">🎓 <span id="playerName">Студент</span></span>
+            <span class="stats-text">❤️ <span id="hpValue">50</span>/50</span>
+            <span class="stats-text">⭐ <span id="scoreValue">0</span></span>
+            <span class="stats-text">📚 <span id="locationsValue">0</span>/12</span>
+        </div>
+        
+        <div class="canvas-container">
+            <canvas id="gameCanvas" width="600" height="600"></canvas>
+        </div>
+    </div>
+    
+    <script>
+        const CELL_SIZE = 30;
+        const MAP_SIZE = 20;
+        const TOTAL_LOCATIONS = 12;
+        
+        let map = [];
+        let playerX = 10, playerY = 10;
+        let score = 0;
+        let hp = 50;
+        let maxHp = 50;
+        let locationsCompleted = 0;
+        let gameActive = true;
+        
+        let locations = {};
+        let npcs = {};
+        let boss = { x: 18, y: 18, isDefeated: false };
+        
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        function initGame() {
+            initMap();
+            initLocations();
+            initNPCs();
+            drawMap();
+            updateUI();
+        }
+        
+        function initMap() {
+            map = Array(MAP_SIZE).fill().map(() => Array(MAP_SIZE).fill('.'));
+            
+            for (let i = 0; i < MAP_SIZE; i++) {
+                map[0][i] = 'W';
+                map[MAP_SIZE-1][i] = 'W';
+                map[i][0] = 'W';
+                map[i][MAP_SIZE-1] = 'W';
+            }
+            
+            for (let i = 2; i < MAP_SIZE-2; i += 3) {
+                for (let j = 2; j < MAP_SIZE-2; j += 2) {
+                    if (Math.random() > 0.6) map[i][j] = 'W';
+                }
+            }
+            
+            map[playerX][playerY] = 'P';
+            map[boss.x][boss.y] = 'B';
+        }
+        
+        function initLocations() {
+            const locationsData = [
+                { x: 2, y: 5, name: '📖 Библиотека', q: 'Кто написал "Войну и мир"?', a: 'толстой' },
+                { x: 3, y: 12, name: '🔬 Лаборатория', q: 'Формула воды?', a: 'h2o' },
+                { x: 5, y: 3, name: '💻 Компьютерный класс', q: 'Что означает ООП?', a: 'объектно-ориентированное программирование' },
+                { x: 6, y: 15, name: '🎭 Актовый зал', q: 'Кто написал "Гамлета"?', a: 'шекспир' },
+                { x: 8, y: 4, name: '🏛️ Лекционный зал', q: 'Теорема Пифагора?', a: 'a² + b² = c²' },
+                { x: 9, y: 14, name: '🎨 Художественная студия', q: 'Кто нарисовал "Мону Лизу"?', a: 'да винчи' },
+                { x: 11, y: 4, name: '🎵 Музыкальный класс', q: 'Кто написал "Лунную сонату"?', a: 'бетховен' },
+                { x: 12, y: 16, name: '🏋️ Спортзал', q: 'Сколько игроков в футболе?', a: '11' },
+                { x: 13, y: 5, name: '🧪 Химия', q: 'Символ кислорода?', a: 'o' },
+                { x: 14, y: 13, name: '📐 Математика', q: 'Число π?', a: '3.14' },
+                { x: 15, y: 4, name: '🌍 География', q: 'Самая длинная река?', a: 'нил' },
+                { x: 4, y: 17, name: '📜 История', q: 'Год начала Второй мировой?', a: '1939' }
+            ];
+            
+            locationsData.forEach(loc => {
+                const key = `${loc.x},${loc.y}`;
+                locations[key] = {
+                    name: loc.name,
+                    question: loc.q,
+                    correctAnswer: loc.a,
+                    isCompleted: false
+                };
+                if (map[loc.x][loc.y] !== 'W') map[loc.x][loc.y] = 'L';
+            });
+        }
+        
+        function initNPCs() {
+            const npcsData = [
+                { x: 4, y: 10, name: '😈 Злой Зачёт', q: 'Сколько бит в байте?', a: '8' },
+                { x: 8, y: 12, name: '👻 Призрак Сессии', q: 'Какая ОС популярна для серверов?', a: 'linux' },
+                { x: 12, y: 8, name: '🤖 Робот', q: 'Что такое алгоритм?', a: 'последовательность действий' }
+            ];
+            
+            npcsData.forEach(npc => {
+                const key = `${npc.x},${npc.y}`;
+                npcs[key] = {
+                    name: npc.name,
+                    question: npc.q,
+                    correctAnswer: npc.a,
+                    isDefeated: false
+                };
+                if (map[npc.x][npc.y] !== 'W' && map[npc.x][npc.y] !== 'L') {
+                    map[npc.x][npc.y] = 'N';
+                }
+            });
+        }
+        
+        function drawMap() {
+            const size = Math.min(window.innerWidth - 40, window.innerHeight - 150);
+            const cellSize = size / MAP_SIZE;
+            
+            canvas.width = size;
+            canvas.height = size;
+            
+            for (let i = 0; i < MAP_SIZE; i++) {
+                for (let j = 0; j < MAP_SIZE; j++) {
+                    let x = j * cellSize;
+                    let y = i * cellSize;
+                    
+                    if (map[i][j] === 'W') {
+                        ctx.fillStyle = '#2a2a3e';
+                    } else {
+                        ctx.fillStyle = '#16213e';
+                    }
+                    ctx.fillRect(x, y, cellSize, cellSize);
+                    
+                    ctx.strokeStyle = '#e94560';
+                    ctx.strokeRect(x, y, cellSize, cellSize);
+                    
+                    ctx.font = `${cellSize * 0.6}px "Segoe UI Emoji"`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    
+                    if (map[i][j] === 'P') {
+                        ctx.fillStyle = '#fff';
+                        ctx.fillText('🎓', x + cellSize/2, y + cellSize/2);
+                    } else if (map[i][j] === 'L') {
+                        ctx.fillStyle = '#fff';
+                        ctx.fillText('📚', x + cellSize/2, y + cellSize/2);
+                    } else if (map[i][j] === 'N') {
+                        ctx.fillStyle = '#fff';
+                        ctx.fillText('👾', x + cellSize/2, y + cellSize/2);
+                    } else if (map[i][j] === 'B') {
+                        ctx.fillStyle = '#fff';
+                        ctx.fillText('👨‍🏫', x + cellSize/2, y + cellSize/2);
+                    }
+                }
+            }
+        }
+        
+        function updateUI() {
+            document.getElementById('scoreValue').innerText = score;
+            document.getElementById('hpValue').innerText = hp;
+            document.getElementById('locationsValue').innerText = locationsCompleted;
+        }
+        
+        function moveToCell(row, col) {
+            if (!gameActive) return;
+            
+            const dx = Math.abs(row - playerX);
+            const dy = Math.abs(col - playerY);
+            if (dx + dy !== 1) return;
+            
+            if (map[row][col] === 'W') return;
+            
+            map[playerX][playerY] = '.';
+            playerX = row;
+            playerY = col;
+            map[playerX][playerY] = 'P';
+            
+            drawMap();
+            checkInteraction();
+        }
+        
+        function checkInteraction() {
+            const key = `${playerX},${playerY}`;
+            
+            if (locations[key] && !locations[key].isCompleted) {
+                const answer = prompt(`📚 ${locations[key].name}\n\nВопрос: ${locations[key].question}`);
+                if (answer && answer.toLowerCase().trim() === locations[key].correctAnswer.toLowerCase()) {
+                    locations[key].isCompleted = true;
+                    score += 20;
+                    locationsCompleted++;
+                    map[playerX][playerY] = '.';
+                    drawMap();
+                    updateUI();
+                    alert('✅ Правильно! +20 очков');
+                } else {
+                    alert(`❌ Неправильно! Правильный ответ: ${locations[key].correctAnswer}`);
+                }
+                return;
+            }
+            
+            if (npcs[key] && !npcs[key].isDefeated) {
+                const answer = prompt(`👾 ${npcs[key].name}\n\nВопрос: ${npcs[key].question}`);
+                if (answer && answer.toLowerCase().trim() === npcs[key].correctAnswer.toLowerCase()) {
+                    npcs[key].isDefeated = true;
+                    score += 30;
+                    map[playerX][playerY] = '.';
+                    drawMap();
+                    updateUI();
+                    alert('✅ Правильно! +30 очков');
+                } else {
+                    alert(`❌ Неправильно! Правильный ответ: ${npcs[key].correctAnswer}`);
+                }
+                return;
+            }
+            
+            if (playerX === boss.x && playerY === boss.y && !boss.isDefeated) {
+                const answer = prompt(`👨‍🏫 ФИНАЛЬНЫЙ БОСС\n\nВопрос: Что такое "рефакторинг" в программировании?`);
+                if (answer && answer.toLowerCase().includes('улучшение') && answer.toLowerCase().includes('код')) {
+                    boss.isDefeated = true;
+                    score += 100;
+                    updateUI();
+                    gameActive = false;
+                    alert(`🏆 ПОБЕДА! 🏆\n⭐ Итоговые очки: ${score}\n🎉 Поздравляем!`);
+                } else {
+                    alert('❌ Неправильно! Правильный ответ: улучшение кода без изменения функционала');
+                }
+            }
+        }
+        
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            
+            const mouseX = (e.clientX - rect.left) * scaleX;
+            const mouseY = (e.clientY - rect.top) * scaleY;
+            
+            const cellSize = canvas.width / MAP_SIZE;
+            const col = Math.floor(mouseX / cellSize);
+            const row = Math.floor(mouseY / cellSize);
+            
+            if (row >= 0 && row < MAP_SIZE && col >= 0 && col < MAP_SIZE) {
+                moveToCell(row, col);
+            }
+        });
+        
+        window.addEventListener('resize', () => drawMap());
+        
+        initGame();
+    </script>
+</body>
+</html>
