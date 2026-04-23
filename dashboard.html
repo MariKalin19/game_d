@@ -14,7 +14,7 @@
             padding: 20px;
         }
         .dashboard {
-            max-width: 800px;
+            max-width: 1200px;
             margin: 0 auto;
         }
         h1 {
@@ -22,6 +22,45 @@
             color: #ffd700;
             text-shadow: 0 0 10px #ff8c00;
         }
+        .qr-section {
+            text-align: center;
+            background: rgba(255,255,255,0.1);
+            border-radius: 30px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        .qr-code {
+            background: white;
+            display: inline-block;
+            padding: 15px;
+            border-radius: 20px;
+        }
+        .qr-code img {
+            width: 180px;
+            height: 180px;
+            display: block;
+        }
+        .game-link {
+            color: #ffaa44;
+            word-break: break-all;
+            font-size: 1rem;
+            margin-top: 15px;
+            background: rgba(0,0,0,0.5);
+            padding: 8px 15px;
+            border-radius: 30px;
+            display: inline-block;
+        }
+        button {
+            background: #ff5722;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 30px;
+            color: white;
+            cursor: pointer;
+            margin-top: 10px;
+            margin-left: 10px;
+        }
+        button:hover { opacity: 0.9; }
         .players-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -36,10 +75,7 @@
             border: 1px solid rgba(255,180,70,0.5);
             transition: 0.2s;
         }
-        .player-card.finished {
-            border-color: #4caf50;
-            background: rgba(40,60,40,0.8);
-        }
+        .player-card.finished { border-color: #4caf50; background: rgba(40,60,40,0.8); }
         .player-header {
             display: flex;
             align-items: center;
@@ -53,35 +89,16 @@
             object-fit: cover;
             border: 2px solid gold;
         }
-        .player-name {
-            font-size: 1.3rem;
-            font-weight: bold;
-            color: white;
-        }
+        .player-name { font-size: 1.2rem; font-weight: bold; color: white; }
         .player-stats {
             display: flex;
             justify-content: space-between;
             margin-top: 8px;
             color: #ddd;
         }
-        .score { color: #ffd700; font-size: 1.2rem; }
-        .status { font-weight: bold; }
+        .score { color: #ffd700; font-size: 1.2rem; font-weight: bold; }
         .status.finished { color: #4caf50; }
         .status.playing { color: #ff9800; }
-        .mini-map {
-            margin-top: 10px;
-            background: #1a1a2e;
-            border-radius: 16px;
-            padding: 8px;
-            text-align: center;
-        }
-        .position-badge {
-            background: #ff5722;
-            display: inline-block;
-            padding: 2px 10px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-        }
         .leaderboard-panel {
             background: rgba(0,0,0,0.6);
             border-radius: 40px;
@@ -106,49 +123,42 @@
         .rank-1 { background: linear-gradient(90deg, #ffd700, #ffaa00); color: #1a1a2a; }
         .rank-2 { background: linear-gradient(90deg, #c0c0c0, #a0a0a0); }
         .rank-3 { background: linear-gradient(90deg, #cd7f32, #b8692a); }
-        .qr-section {
-            text-align: center;
-            margin-bottom: 30px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 30px;
-            padding: 20px;
-        }
-        .qr-code {
-            background: white;
-            display: inline-block;
-            padding: 15px;
+        .waiting { animation: pulse 1.5s infinite; color: #ffaa44; text-align: center; padding: 40px; font-size: 1.2rem; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
+        .refresh-btn { background: #2196f3; }
+        .online-badge {
+            background: #4caf50;
             border-radius: 20px;
+            padding: 2px 10px;
+            font-size: 0.7rem;
+            margin-left: 10px;
         }
-        .game-link {
-            color: #ffaa44;
-            word-break: break-all;
-            font-size: 0.9rem;
+        .footer-note {
+            text-align: center;
+            margin-top: 30px;
+            color: rgba(255,255,255,0.5);
+            font-size: 0.8rem;
         }
-        button {
-            background: #ff5722;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 30px;
-            color: white;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-        @keyframes pulse {
-            0%,100%{opacity:1} 50%{opacity:0.6}
-        }
-        .waiting { animation: pulse 1.5s infinite; color: #ffaa44; }
     </style>
 </head>
 <body>
 <div class="dashboard">
     <h1>🏆 ИВГУ МЕГА-ЛАБИРИНТ 🏆</h1>
+    
     <div class="qr-section">
         <h3>📱 Сканируйте QR-код для игры</h3>
-        <div class="qr-code" id="qrCode"></div>
-        <p class="game-link" id="gameLink">Загрузка...</p>
+        <div class="qr-code" id="qrCode">
+            <!-- Здесь будет ваш QR-код из файла qr.jpg -->
+            <img src="qr.jpg" alt="QR-код для входа в игру" style="width:180px; height:180px;" onerror="this.onerror=null; this.src='https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=https://marikalin19.github.io/game/';">
+        </div>
+        <div class="game-link" id="gameLink">
+            🔗 https://marikalin19.github.io/game/
+        </div>
         <button id="copyLinkBtn">📋 Копировать ссылку</button>
+        <button id="refreshBtn" class="refresh-btn">🔄 Обновить данные</button>
     </div>
     
+    <h2>👥 ИГРОКИ ОНЛАЙН <span id="playersCount" class="online-badge">0</span></h2>
     <div class="players-grid" id="playersGrid">
         <div class="waiting">⏳ Ожидание подключения игроков...</div>
     </div>
@@ -159,18 +169,26 @@
             <li>Нет данных</li>
         </ul>
     </div>
+    <div class="footer-note">
+        🖥️ Панель организатора обновляется автоматически раз в секунду
+    </div>
 </div>
 
 <script>
+    // ========== КОНФИГУРАЦИЯ ==========
     const ROOM_ID = "ivgu_maze_2025";
+    const GAME_URL = "https://marikalin19.github.io/game/";
     let currentState = { players: {}, finishOrder: [] };
     
+    // Загрузка состояния из localStorage (синхронизация с игрой)
     function loadState() {
         const saved = localStorage.getItem(`maze_${ROOM_ID}_state`);
         if(saved) {
             try {
                 currentState = JSON.parse(saved);
-            } catch(e) {}
+            } catch(e) {
+                console.warn("Ошибка парсинга", e);
+            }
         }
         renderDashboard();
     }
@@ -180,39 +198,43 @@
         const finishOrder = currentState.finishOrder || [];
         const playersGrid = document.getElementById('playersGrid');
         const leaderboardList = document.getElementById('leaderboardList');
+        const playersCountSpan = document.getElementById('playersCount');
         
-        if(Object.keys(players).length === 0) {
+        const playersArray = Object.values(players);
+        playersCountSpan.textContent = playersArray.length;
+        
+        if(playersArray.length === 0) {
             playersGrid.innerHTML = '<div class="waiting">👥 Нет активных игроков. Попросите отсканировать QR-код!</div>';
         } else {
-            playersGrid.innerHTML = Object.values(players).map(p => `
+            playersGrid.innerHTML = playersArray.map(p => `
                 <div class="player-card ${p.finished ? 'finished' : ''}">
                     <div class="player-header">
                         <img class="player-avatar" src="${p.avatarUrl || 'https://cdn-icons-png.flaticon.com/512/1995/1995572.png'}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1995/1995572.png'">
                         <div>
                             <div class="player-name">${escapeHtml(p.name)}</div>
-                            <div class="position-badge">${p.finished ? `🏁 ${p.finishPosition || '?'} место` : '🎯 в игре'}</div>
+                            <div style="font-size:0.75rem; opacity:0.7;">${p.finished ? `🏁 Финиш: ${p.finishPosition || '?'} место` : '🎯 В пути'}</div>
                         </div>
                     </div>
                     <div class="player-stats">
                         <span>⭐ <span class="score">${p.score || 0}</span> очков</span>
-                        <span class="status ${p.finished ? 'finished' : 'playing'}">${p.finished ? '✅ ФИНИШ' : '⏳ в пути'}</span>
+                        <span class="status ${p.finished ? 'finished' : 'playing'}">${p.finished ? '✅ ФИНИШ' : '⏳ в игре'}</span>
                     </div>
-                    <div class="mini-map">
-                        🧭 позиция: (${p.x || 1}, ${p.y || 1})
+                    <div style="font-size:0.7rem; opacity:0.6;">
+                        📍 Позиция: (${p.x || 1}, ${p.y || 1})
                     </div>
                 </div>
             `).join('');
         }
         
         // Рейтинг по очкам
-        const sortedByScore = Object.values(players).sort((a,b) => (b.score || 0) - (a.score || 0));
+        const sortedByScore = [...playersArray].sort((a,b) => (b.score || 0) - (a.score || 0));
         if(sortedByScore.length === 0) {
             leaderboardList.innerHTML = '<li>Нет данных</li>';
         } else {
             leaderboardList.innerHTML = sortedByScore.slice(0,10).map((p, idx) => `
                 <li class="${idx === 0 ? 'rank-1' : idx === 1 ? 'rank-2' : idx === 2 ? 'rank-3' : ''}">
                     <span style="font-size:1.3rem;">${idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx+1}.`}</span>
-                    <span>${escapeHtml(p.name)}</span>
+                    <span><strong>${escapeHtml(p.name)}</strong></span>
                     <span style="flex:1; text-align:right;">⭐ ${p.score || 0}</span>
                     <span>${p.finished ? '🏁' : '🎯'}</span>
                 </li>
@@ -220,60 +242,54 @@
         }
     }
     
-    function escapeHtml(str) { return String(str).replace(/[&<>]/g, function(m) { if(m === '&') return '&amp;'; if(m === '<') return '&lt;'; if(m === '>') return '&gt;'; return m; }); }
-    
-    // Генерация QR и ссылки
-    function getCurrentGameUrl() {
-        let url = window.location.href;
-        if(url.includes('dashboard')) {
-            url = url.replace('dashboard.html', 'phone.html');
-        } else if(url.endsWith('/')) {
-            url = url + 'phone.html';
-        } else {
-            url = url.substring(0, url.lastIndexOf('/') + 1) + 'phone.html';
-        }
-        if(!url.includes('phone.html')) url = url + 'phone.html';
-        return url;
-    }
-    
-    function generateQRCode(url) {
-        const qrDiv = document.getElementById('qrCode');
-        qrDiv.innerHTML = '';
-        if(typeof QRCode === 'undefined') {
-            qrDiv.innerHTML = `<canvas id="tempQr" width="150" height="150"></canvas>`;
-            const canvas = document.getElementById('tempQr');
-            if(canvas) {
-                const ctx = canvas.getContext('2d');
-                ctx.fillStyle = 'white'; ctx.fillRect(0,0,150,150);
-                ctx.fillStyle = 'black'; ctx.font = '12px sans-serif';
-                ctx.fillText('QR:', 10, 75);
-                ctx.fillText(url.substring(0,25)+'...', 10, 95);
-            }
-            return;
-        }
-        new QRCode(qrDiv, { text: url, width: 150, height: 150 });
+    function escapeHtml(str) { 
+        if(!str) return '';
+        return String(str).replace(/[&<>]/g, function(m) { 
+            if(m === '&') return '&amp;'; 
+            if(m === '<') return '&lt;'; 
+            if(m === '>') return '&gt;'; 
+            return m; 
+        }); 
     }
     
     function init() {
-        loadState();
-        const gameUrl = getCurrentGameUrl();
-        document.getElementById('gameLink').innerHTML = gameUrl;
-        generateQRCode(gameUrl);
+        // Устанавливаем ссылку в текст
+        const gameLinkEl = document.getElementById('gameLink');
+        if(gameLinkEl) gameLinkEl.innerHTML = `🔗 ${GAME_URL}`;
+        
+        // Копирование ссылки
         document.getElementById('copyLinkBtn')?.addEventListener('click', () => {
-            navigator.clipboard.writeText(gameUrl);
-            alert('Ссылка скопирована!');
+            navigator.clipboard.writeText(GAME_URL);
+            alert('✅ Ссылка скопирована!');
         });
-        // Обновление каждые 0.5 секунды
-        setInterval(() => { loadState(); }, 500);
-        window.addEventListener('storage', (e) => { if(e.key === `maze_${ROOM_ID}_state`) loadState(); });
+        
+        // Кнопка обновления
+        document.getElementById('refreshBtn')?.addEventListener('click', () => {
+            loadState();
+        });
+        
+        // Загружаем состояние
+        loadState();
+        
+        // Автообновление каждую секунду
+        setInterval(() => { loadState(); }, 1000);
+        
+        // Слушаем изменения localStorage (для синхронизации с игрой)
+        window.addEventListener('storage', (e) => { 
+            if(e.key === `maze_${ROOM_ID}_state`) {
+                loadState(); 
+            }
+        });
+        
+        // Проверяем, загрузился ли QR-код из файла, если нет — используем API
+        const qrImg = document.querySelector('.qr-code img');
+        if(qrImg && qrImg.complete && qrImg.naturalWidth === 0) {
+            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(GAME_URL)}`;
+        }
     }
     
-    // Загрузка библиотеки QRCode
-    const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js';
-    script.onload = () => { init(); };
-    document.head.appendChild(script);
-    if(window.QRCode) init();
+    // Запуск после загрузки страницы
+    document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
 </html>
