@@ -255,17 +255,25 @@
             color: #ffaa44;
             text-decoration: none;
         }
+        
+        .back-to-game-btn {
+            background: linear-gradient(135deg, #4caf50, #2e7d32);
+            box-shadow: 0 4px 0 #1b5e20;
+        }
+        .back-to-game-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #1b5e20;
+        }
     </style>
 </head>
 <body>
 <div id="app"></div>
 
 <script>
-    // ========== НАСТРОЙКИ ИГРЫ (КАРТА 20×20) ==========
+    // ========== НАСТРОЙКИ ИГРЫ ==========
     const MAZE_SIZE = 20;
     const CELL_SIZE = 32;
 
-    // АВАТАРЫ (без названий классов, только имена пользователей)
     const AVATAR_LIST = [
         { id: 1, imageUrl: "https://cdn-icons-png.flaticon.com/512/4472/4472533.png", color: "#8B5CF6", emoji: "🧙" },
         { id: 2, imageUrl: "https://cdn-icons-png.flaticon.com/512/4472/4472510.png", color: "#EF4444", emoji: "⚔️" },
@@ -275,7 +283,6 @@
         { id: 6, imageUrl: "https://cdn-icons-png.flaticon.com/512/4472/4472525.png", color: "#3B82F6", emoji: "🛡️" }
     ];
 
-    // Вопросы
     const questionsBank = [
         { text: "💾 Что из перечисленного является оперативной памятью?", options: ["Жесткий диск", "SSD-накопитель", "RAM", "Процессор"], correct: 2 },
         { text: "🔢 Сколько бит в одном байте?", options: ["2", "8", "16", "1024"], correct: 1 },
@@ -295,7 +302,6 @@
         return { ...questionsBank[Math.floor(Math.random() * questionsBank.length)], id: Date.now() + Math.random() }; 
     }
 
-    // Генерация лабиринта
     function generateMaze(size) {
         let maze = Array(size).fill().map(() => Array(size).fill(1));
         function carve(x, y) {
@@ -324,7 +330,6 @@
     let baseMaze = generateMaze(MAZE_SIZE);
     baseMaze[MAZE_SIZE-2][MAZE_SIZE-2] = 4;
 
-    // Декорирование предметами
     function decorateMazeWithItems(maze) {
         let newMaze = maze.map(row => [...row]);
         let positions = [];
@@ -338,22 +343,18 @@
             [positions[i], positions[j]] = [positions[j], positions[i]]; 
         }
         
-        // Монетки (20 штук)
         for(let i = 0; i < 20 && i < positions.length; i++) { 
             const [x,y] = positions[i]; 
             if(newMaze[y][x] === 0) newMaze[y][x] = 2; 
         }
-        // Вопросы (15 штук)
         for(let i = 20; i < 35 && i < positions.length; i++) { 
             const [x,y] = positions[i]; 
             if(newMaze[y][x] === 0) newMaze[y][x] = 3; 
         }
-        // Ловушки (8 штук)
         for(let i = 35; i < 43 && i < positions.length; i++) { 
             const [x,y] = positions[i]; 
             if(newMaze[y][x] === 0) newMaze[y][x] = 5; 
         }
-        // Ускорения (5 штук)
         for(let i = 43; i < 48 && i < positions.length; i++) { 
             const [x,y] = positions[i]; 
             if(newMaze[y][x] === 0) newMaze[y][x] = 6; 
@@ -369,8 +370,8 @@
     let finishOrder = [];
     let currentScreen = 'welcome';
     let appDiv;
+    let gameStateBeforeRating = null; // Для возврата в игру
 
-    // Сохранение результатов в localStorage для рейтинга
     function saveLeaderboard() {
         localStorage.setItem('maze_leaderboard', JSON.stringify(finishOrder));
     }
@@ -575,43 +576,37 @@
         }
     }
 
-    function showGlobalLeaderboard() {
-        const sorted = [...finishOrder].sort((a,b) => a.position - b.position);
-        appDiv.innerHTML = `
-            <div class="screen">
-                <h2>🏆 ОБЩИЙ РЕЙТИНГ 🏆</h2>
-                <div class="leaderboard">
-                    <ol>
-                        ${sorted.map(p => `
-                            <li class="${p.position === 1 ? 'rank-1' : p.position === 2 ? 'rank-2' : p.position === 3 ? 'rank-3' : ''}">
-                                <strong>${p.position}. место</strong> 
-                                <span>${p.emoji || '🧙'} ${p.name}</span>
-                                <span>⭐ ${p.score} очков</span>
-                                <span>⏱️ ${(p.time/1000).toFixed(1)}с</span>
-                            </li>
-                        `).join('')}
-                    </ol>
-                </div>
-                <div class="rating-link">
-                    📊 <a href="#" id="showRatingLink">Посмотреть таблицу рейтинга</a>
-                </div>
-                <div style="display:flex; gap:15px; justify-content:center; margin-top:10px;">
-                    <button id="restartBtn">🔄 Сыграть снова</button>
-                    <button id="menuBtn">🏠 Меню</button>
-                </div>
-            </div>
-        `;
-        document.getElementById('restartBtn')?.addEventListener('click', () => { resetAndRestart(); });
-        document.getElementById('menuBtn')?.addEventListener('click', () => { window.location.reload(); });
-        document.getElementById('showRatingLink')?.addEventListener('click', (e) => {
-            e.preventDefault();
-            showRatingOnly();
-        });
+    // Сохраняем состояние игры перед просмотром рейтинга
+    function saveGameState() {
+        if (gameActive && players[localPlayerId] && !players[localPlayerId].finished) {
+            gameStateBeforeRating = {
+                gameActive: gameActive,
+                gameMaze: gameMaze.map(row => [...row]),
+                player: { ...players[localPlayerId] }
+            };
+        }
     }
 
-    // Отдельная страница с рейтингом (без игры)
+    // Возвращаемся в игру
+    function resumeGame() {
+        if (gameStateBeforeRating && gameStateBeforeRating.gameActive && !gameStateBeforeRating.player.finished) {
+            gameActive = true;
+            gameMaze = gameStateBeforeRating.gameMaze.map(row => [...row]);
+            players[localPlayerId] = { ...gameStateBeforeRating.player };
+            currentScreen = 'game';
+            renderGameScreen();
+            gameStateBeforeRating = null;
+        } else {
+            // Если нет сохранённой игры, просто перезагружаем
+            location.reload();
+        }
+    }
+
     function showRatingOnly() {
+        saveGameState();
         const sorted = [...finishOrder].sort((a,b) => a.position - b.position);
+        const hasActiveGame = gameStateBeforeRating !== null && gameStateBeforeRating.gameActive === true;
+        
         appDiv.innerHTML = `
             <div class="screen">
                 <h2>🏆 ТАБЛИЦА РЕЙТИНГА 🏆</h2>
@@ -624,21 +619,33 @@
                                 <span>⭐ ${p.score} очков</span>
                                 <span>⏱️ ${(p.time/1000).toFixed(1)}с</span>
                             </li>
-                        `).join('') : '<li>Пока нет результатов</li>'}
+                        `).join('') : '<li style="justify-content:center;">Пока нет результатов</li>'}
                     </ol>
                 </div>
-                <div style="display:flex; gap:15px; justify-content:center; margin-top:10px;">
-                    <button id="backToGameBtn">🎮 На главную</button>
+                <div style="display:flex; gap:15px; justify-content:center; flex-wrap:wrap;">
+                    ${hasActiveGame ? `<button id="resumeGameBtn" class="back-to-game-btn">🎮 Вернуться в игру</button>` : ''}
+                    <button id="restartFromRatingBtn">🔄 Новая игра</button>
+                    <button id="menuFromRatingBtn">🏠 Главное меню</button>
                 </div>
             </div>
         `;
-        document.getElementById('backToGameBtn')?.addEventListener('click', () => {
-            location.reload();
+        
+        if (hasActiveGame) {
+            document.getElementById('resumeGameBtn')?.addEventListener('click', () => {
+                resumeGame();
+            });
+        }
+        document.getElementById('restartFromRatingBtn')?.addEventListener('click', () => {
+            resetAndRestart();
+        });
+        document.getElementById('menuFromRatingBtn')?.addEventListener('click', () => {
+            window.location.reload();
         });
     }
 
     function resetAndRestart() {
         gameActive = false;
+        gameStateBeforeRating = null;
         const p = players[localPlayerId];
         players = {}; 
         finishOrder = [];
@@ -762,7 +769,7 @@
         });
         document.getElementById('ratingLinkWelcome')?.addEventListener('click', (e) => {
             e.preventDefault();
-            loadLeaderboard();
+            saveGameState();
             showRatingOnly();
         });
     }
@@ -780,6 +787,9 @@
                     `).join('')}
                 </div>
                 <button id="startBtn">🏁 Начать гонку!</button>
+                <div class="rating-link">
+                    📊 <a href="#" id="ratingLinkAvatar">Посмотреть таблицу рейтинга</a>
+                </div>
             </div>
         `;
         let selected = AVATAR_LIST[0];
@@ -803,6 +813,12 @@
             img.src = selected.imageUrl; 
             players[localPlayerId].avatarImg = img;
             startCountdown();
+        });
+        
+        document.getElementById('ratingLinkAvatar')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            saveGameState();
+            showRatingOnly();
         });
     }
 
