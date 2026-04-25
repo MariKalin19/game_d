@@ -14,7 +14,7 @@
         body {
             margin: 0;
             min-height: 100vh;
-            background: linear-gradient(145deg, #0a2f1a 0%, #051a0a 100%);
+            background: linear-gradient(145deg, #00b8f6 0%, #0008e4 100%);
             font-family: 'Segoe UI', 'Poppins', 'Montserrat', sans-serif;
             display: flex;
             justify-content: center;
@@ -72,8 +72,8 @@
         }
         .touch-btn:active {
             transform: scale(0.92);
-            background: #ff5722;
-            border-color: #ffaa44;
+            background: #0b22f7;
+            border-color: #8fb6e6;
         }
         @media (max-width: 600px) {
             .touch-btn { width: 65px; height: 65px; font-size: 1.8rem; }
@@ -279,6 +279,14 @@
             transform: translateY(2px);
             box-shadow: 0 2px 0 #1b5e20;
         }
+        
+        /* Стиль для имени над игроком (рендерится в canvas) */
+        .player-name-canvas {
+            font-family: 'Segoe UI', 'Poppins', sans-serif;
+            font-weight: bold;
+            text-shadow: 1px 1px 0px black;
+            white-space: nowrap;
+        }
     </style>
 </head>
 <body>
@@ -298,6 +306,7 @@
         { id: 6, imageUrl: "https://cdn-icons-png.flaticon.com/512/4472/4472525.png", color: "#3B82F6", emoji: "🛡️" }
     ];
 
+    // Банк вопросов (12 уникальных)
     const questionsBank = [
         { text: "💾 Что из перечисленного является оперативной памятью?", options: ["Жесткий диск", "SSD-накопитель", "RAM", "Процессор"], correct: 2 },
         { text: "🔢 Сколько бит в одном байте?", options: ["2", "8", "16", "1024"], correct: 1 },
@@ -313,8 +322,36 @@
         { text: "⌨️ Что делает кнопка «Ctrl + Z» в любом редакторе?", options: ["Сохраняет файл", "Копирует выделенный фрагмент", "Отменяет последнее действие", "Закрывает программу"], correct: 2 }
     ];
     
+    // Система неповторяющихся вопросов
+    let playerUsedQuestions = {};
+    
+    function getRandomQuestionForPlayer(playerId) {
+        if (!playerUsedQuestions[playerId]) {
+            playerUsedQuestions[playerId] = [];
+        }
+        
+        const usedIds = playerUsedQuestions[playerId];
+        const availableQuestions = questionsBank.filter((_, idx) => !usedIds.includes(idx));
+        
+        if (availableQuestions.length === 0) {
+            playerUsedQuestions[playerId] = [];
+            const freshAvailable = questionsBank;
+            const randomIndex = Math.floor(Math.random() * freshAvailable.length);
+            const selectedQuestion = { ...freshAvailable[randomIndex], id: Date.now() + Math.random() };
+            playerUsedQuestions[playerId].push(randomIndex);
+            return selectedQuestion;
+        }
+        
+        const randomQuestionIndex = Math.floor(Math.random() * availableQuestions.length);
+        const originalIndex = questionsBank.findIndex(q => q.text === availableQuestions[randomQuestionIndex].text);
+        
+        playerUsedQuestions[playerId].push(originalIndex);
+        
+        return { ...availableQuestions[randomQuestionIndex], id: Date.now() + Math.random() };
+    }
+    
     function getRandomQuestion() { 
-        return { ...questionsBank[Math.floor(Math.random() * questionsBank.length)], id: Date.now() + Math.random() }; 
+        return getRandomQuestionForPlayer(localPlayerId);
     }
 
     function generateMaze(size) {
@@ -441,6 +478,8 @@
     function drawGame(ctx) {
         if(!ctx) return;
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        
+        // Рисуем лабиринт и предметы
         for(let y = 0; y < MAZE_SIZE; y++) {
             for(let x = 0; x < MAZE_SIZE; x++) {
                 let cell = gameMaze[y][x];
@@ -492,20 +531,54 @@
             }
         }
         
+        // Рисуем игрока (фишку) с именем над ним
         const localP = players[localPlayerId];
         if(localP && !localP.finished) {
+            const centerX = localP.x * CELL_SIZE + CELL_SIZE/2;
+            const centerY = localP.y * CELL_SIZE + CELL_SIZE/2;
+            
+            // Тень для круга
+            ctx.shadowColor = "rgba(0,0,0,0.4)";
+            ctx.shadowBlur = 4;
+            
+            // Рисуем круг фишки
             ctx.fillStyle = localP.color;
             ctx.beginPath(); 
-            ctx.arc(localP.x * CELL_SIZE + CELL_SIZE/2, localP.y * CELL_SIZE + CELL_SIZE/2, 12, 0, 2*Math.PI); 
+            ctx.arc(centerX, centerY, 12, 0, 2*Math.PI); 
             ctx.fill();
-            ctx.font = "18px sans-serif";
-            ctx.fillStyle = "white";
-            ctx.fillText(localP.emoji || "🧙", localP.x * CELL_SIZE + 8, localP.y * CELL_SIZE + 20);
+            
+            // Обводка золотом
             ctx.beginPath(); 
-            ctx.arc(localP.x * CELL_SIZE + CELL_SIZE/2, localP.y * CELL_SIZE + CELL_SIZE/2, 14, 0, 2*Math.PI);
+            ctx.arc(centerX, centerY, 14, 0, 2*Math.PI);
             ctx.strokeStyle = "gold";
             ctx.lineWidth = 3;
             ctx.stroke();
+            
+            // Сбрасываем тень для emoji и текста
+            ctx.shadowBlur = 0;
+            
+            // Рисуем эмодзи внутри круга
+            ctx.font = "18px sans-serif";
+            ctx.fillStyle = "white";
+            ctx.fillText(localP.emoji || "🧙", localP.x * CELL_SIZE + 8, localP.y * CELL_SIZE + 20);
+            
+            // Рисуем имя НАД фишкой (с тенью для читаемости)
+            ctx.font = "bold 14px 'Segoe UI', 'Poppins', sans-serif";
+            ctx.shadowColor = "rgba(0,0,0,0.7)";
+            ctx.shadowBlur = 2;
+            ctx.fillStyle = "#FFFFFF";
+            const nameText = localP.name.length > 12 ? localP.name.slice(0,10)+".." : localP.name;
+            const textWidth = ctx.measureText(nameText).width;
+            ctx.fillText(nameText, centerX - textWidth/2, localP.y * CELL_SIZE - 4);
+            
+            // Рисуем небольшую стрелку-указатель под именем (для красоты)
+            ctx.fillStyle = "#FFD700";
+            ctx.font = "12px sans-serif";
+            ctx.fillText("▼", centerX - 4, localP.y * CELL_SIZE - 6);
+            
+            // Сбрасываем тень
+            ctx.shadowBlur = 0;
+            ctx.shadowColor = "transparent";
         }
     }
 
@@ -559,7 +632,8 @@
         }
         else if(cell === 3) { 
             p.hasPendingQuestion = true; 
-            showQuestionModal(p, getRandomQuestion()); 
+            const uniqueQuestion = getRandomQuestionForPlayer(localPlayerId);
+            showQuestionModal(p, uniqueQuestion); 
         }
         else if(cell === 4 && !p.finished) {
             p.finished = true; 
@@ -634,6 +708,7 @@
         gameStateBeforeRating = null;
         players = {};
         finishOrder = [];
+        playerUsedQuestions = {};
         localPlayerId = "player_1";
         currentScreen = 'welcome';
         renderWelcomeScreen();
@@ -720,6 +795,7 @@
         const p = players[localPlayerId];
         players = {}; 
         finishOrder = [];
+        playerUsedQuestions = {};
         gameMaze = decorateMazeWithItems(baseMaze);
         if(p) { 
             p.x = 1; p.y = 1; p.score = 0; p.finished = false; 
