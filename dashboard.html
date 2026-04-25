@@ -14,7 +14,7 @@
         body {
             min-height: 100vh;
             background: linear-gradient(135deg, #0b2b3b, #1a4a6f, #0e2a3a);
-            font-family: 'Segoe UI', 'Poppins', system-ui, -apple-system, sans-serif;
+            font-family: 'Segoe UI', 'Poppins', system-ui, sans-serif;
             padding: 20px;
         }
 
@@ -23,7 +23,6 @@
             margin: 0 auto;
         }
 
-        /* Header */
         .main-header {
             text-align: center;
             margin-bottom: 25px;
@@ -35,7 +34,6 @@
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
-            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
             display: inline-flex;
             align-items: center;
             gap: 12px;
@@ -58,7 +56,6 @@
             50% { opacity: 0.6; }
         }
 
-        /* QR Section */
         .qr-section {
             background: rgba(0, 0, 0, 0.5);
             backdrop-filter: blur(15px);
@@ -159,7 +156,6 @@
             background: linear-gradient(135deg, #c0392b, #e74c3c);
         }
 
-        /* Две колонки */
         .two-columns {
             display: grid;
             grid-template-columns: 1fr 1.2fr;
@@ -173,7 +169,6 @@
             }
         }
 
-        /* Игроки онлайн */
         .players-panel, .leaderboard-panel {
             background: rgba(0, 0, 0, 0.55);
             backdrop-filter: blur(10px);
@@ -191,6 +186,7 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            flex-wrap: wrap;
         }
 
         .players-grid {
@@ -266,7 +262,6 @@
             color: white;
         }
 
-        /* Таблица рейтинга (сохраняется навсегда) */
         .leaderboard-list {
             list-style: none;
             max-height: 500px;
@@ -368,7 +363,6 @@
     </div>
 
     <div class="two-columns">
-        <!-- Левая колонка: Активные игроки -->
         <div class="players-panel">
             <div class="panel-title">
                 🎮 ИГРОКИ ОНЛАЙН
@@ -378,41 +372,36 @@
                 <div class="empty-state">⏳ Ожидание игроков...</div>
             </div>
             <div class="auto-refresh-note">
-                🔄 Показывает только активных за последние 60 секунд
+                🔄 Показывает активных за последние 90 секунд
             </div>
         </div>
 
-        <!-- Правая колонка: Рейтинг (сохраняется навсегда) -->
         <div class="leaderboard-panel">
             <div class="panel-title">
                 🏆 РЕЙТИНГ ФИНИШЁРОВ 🏆
-                <span style="font-size:0.7rem;">(сохраняется после каждого финиша)</span>
+                <span style="font-size:0.7rem;">(сохраняется навсегда)</span>
             </div>
             <div id="leaderboardContainer">
                 <div class="empty-state">🏁 Пока никто не финишировал</div>
             </div>
             <div class="auto-refresh-note">
-                ⭐ Рейтинг обновляется автоматически. Каждый финиш добавляет место.
+                ⭐ Каждый финиш навсегда добавляется в рейтинг
             </div>
         </div>
     </div>
 
     <div class="footer">
-        💡 Игроки сканируют QR-код → проходят лабиринт → их результат навсегда сохраняется в рейтинге.<br>
-        📌 Активные игроки видны в левой колонке. Данные синхронизируются в реальном времени.
+        💡 Игроки сканируют QR-код → проходят лабиринт → их результат НАВСЕГДА сохраняется в рейтинге.<br>
+        📌 Данные синхронизируются между всеми устройствами автоматически.
     </div>
 </div>
 
 <script>
-    // ====================== КЛЮЧИ ХРАНИЛИЩА ======================
-    const STORAGE_KEY_LEADERBOARD = "maze_leaderboard";   // массив финишёров (сохраняется навсегда)
-    const STORAGE_KEY_PLAYERS = "maze_players";           // все игроки (активные + финишировавшие)
-    const STORAGE_KEY_GLOBAL_STATS = "maze_global_stats"; // общая статистика
-    
-    // URL игры (должен быть тот же, что используется в index.html)
+    // Ключи для localStorage (ДОЛЖНЫ СОВПАДАТЬ С index.html)
+    const STORAGE_KEY_LEADERBOARD = "maze_leaderboard";
+    const STORAGE_KEY_PLAYERS = "maze_players";
     const GAME_URL = "https://marikalin19.github.io/game/";
-    
-    // ---------------------- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ----------------------
+
     function escapeHtml(str) {
         if (!str) return '';
         return String(str).replace(/[&<>]/g, function(m) {
@@ -422,57 +411,22 @@
             return m;
         });
     }
-    
-    // Получить рейтинг (отсортированный по позициям)
+
+    // Получить рейтинг из localStorage
     function getLeaderboard() {
         const raw = localStorage.getItem(STORAGE_KEY_LEADERBOARD);
         if (!raw) return [];
         try {
             let data = JSON.parse(raw);
             if (!Array.isArray(data)) return [];
-            // сортируем по позиции
             data.sort((a, b) => (a.position || 999) - (b.position || 999));
             return data;
         } catch(e) {
             return [];
         }
     }
-    
-    // Сохранить рейтинг (с автоматической нумерацией мест)
-    function saveLeaderboard(leaderboardArray) {
-        // пересчитываем позиции на основе порядка (по времени финиша)
-        const sortedByFinishTime = [...leaderboardArray].sort((a,b) => (a.finishTimestamp || 0) - (b.finishTimestamp || 0));
-        for (let i = 0; i < sortedByFinishTime.length; i++) {
-            sortedByFinishTime[i].position = i + 1;
-        }
-        localStorage.setItem(STORAGE_KEY_LEADERBOARD, JSON.stringify(sortedByFinishTime));
-        return sortedByFinishTime;
-    }
-    
-    // Добавить финишёра в рейтинг (если его там ещё нет)
-    function addToLeaderboard(player) {
-        if (!player || !player.id) return false;
-        let currentBoard = getLeaderboard();
-        // Проверяем, нет ли уже этого игрока в рейтинге
-        const exists = currentBoard.some(entry => entry.id === player.id);
-        if (exists) return false;
-        
-        const newEntry = {
-            id: player.id,
-            name: player.name || "Аноним",
-            score: player.score || 0,
-            time: player.finishTime || 0,
-            emoji: player.emoji || "🏁",
-            finishTimestamp: player.finishTimestamp || Date.now(),
-            position: currentBoard.length + 1
-        };
-        currentBoard.push(newEntry);
-        // Сортируем и сохраняем
-        const updated = saveLeaderboard(currentBoard);
-        return true;
-    }
-    
-    // Получить всех игроков из хранилища (с фильтрацией по времени жизни)
+
+    // Получить всех игроков
     function getAllPlayers() {
         const raw = localStorage.getItem(STORAGE_KEY_PLAYERS);
         if (!raw) return {};
@@ -482,8 +436,6 @@
             const activePlayers = {};
             for (let id in parsed) {
                 const p = parsed[id];
-                // Если игрок финишировал - оставляем всегда (чтобы видеть в истории)
-                // Если не финишировал - проверяем, активен ли последние 90 секунд
                 const isFinished = p.finished === true;
                 const lastUpdate = p.lastUpdate || 0;
                 const isRecent = (now - lastUpdate) < 90000; // 90 секунд
@@ -497,7 +449,6 @@
                         score: p.score || 0,
                         finished: p.finished === true,
                         finishPosition: p.finishPosition || null,
-                        finishTime: p.finishTime || 0,
                         x: p.x || 1,
                         y: p.y || 1,
                         lastUpdate: p.lastUpdate || now,
@@ -510,66 +461,13 @@
             return {};
         }
     }
-    
-    // Сохранить состояние игрока
-    function syncPlayerToStorage(player) {
-        if (!player || !player.id) return;
-        let allPlayersData = {};
-        const raw = localStorage.getItem(STORAGE_KEY_PLAYERS);
-        if (raw) {
-            try {
-                allPlayersData = JSON.parse(raw);
-            } catch(e) {}
-        }
-        allPlayersData[player.id] = {
-            name: player.name,
-            avatarUrl: player.avatarUrl,
-            emoji: player.emoji,
-            score: player.score,
-            finished: player.finished,
-            finishPosition: player.finishPosition,
-            finishTime: player.finishTime,
-            x: player.x,
-            y: player.y,
-            lastUpdate: Date.now(),
-            color: player.color
-        };
-        localStorage.setItem(STORAGE_KEY_PLAYERS, JSON.stringify(allPlayersData));
-    }
-    
-    // Глобальная отрисовка дашборда
+
+    // Главная отрисовка
     function renderDashboard() {
-        // 1. Получаем данные
-        let playersMap = getAllPlayers();
-        let leaderboardArray = getLeaderboard();
+        const leaderboardArray = getLeaderboard();
+        const playersMap = getAllPlayers();
         
-        // 2. Синхронизация: если в playersMap есть финишировавшие, но нет в leaderboard — добавляем
-        let needUpdateLeaderboard = false;
-        for (let id in playersMap) {
-            const p = playersMap[id];
-            if (p.finished && p.finishTime) {
-                const alreadyInBoard = leaderboardArray.some(entry => entry.id === id);
-                if (!alreadyInBoard) {
-                    // Добавляем в рейтинг
-                    const newEntry = {
-                        id: id,
-                        name: p.name,
-                        score: p.score,
-                        time: p.finishTime,
-                        emoji: p.emoji,
-                        finishTimestamp: p.lastUpdate,
-                        position: leaderboardArray.length + 1
-                    };
-                    leaderboardArray.push(newEntry);
-                    needUpdateLeaderboard = true;
-                }
-            }
-        }
-        if (needUpdateLeaderboard) {
-            leaderboardArray = saveLeaderboard(leaderboardArray);
-        }
-        
-        // 3. Подсчёт статистики
+        // Статистика
         const totalFinished = leaderboardArray.length;
         const activeNow = Object.values(playersMap).filter(p => !p.finished).length;
         const totalPlayersEver = Object.keys(playersMap).length;
@@ -579,10 +477,7 @@
         document.getElementById('totalPlayersStat').innerText = totalPlayersEver;
         document.getElementById('onlineCount').innerText = Object.keys(playersMap).length;
         
-        // 4. Рендер игроков
         renderPlayersList(playersMap);
-        
-        // 5. Рендер рейтинга
         renderLeaderboard(leaderboardArray);
     }
     
@@ -594,7 +489,6 @@
             return;
         }
         
-        // сортируем: сначала те, кто в игре, потом финишировавшие
         playersArr.sort((a,b) => {
             if (a.finished === b.finished) return b.score - a.score;
             return a.finished ? 1 : -1;
@@ -653,14 +547,12 @@
         `;
     }
     
-    // ---------------------- ОЧИСТКА ВСЕХ ДАННЫХ ----------------------
+    // Сброс статистики
     function resetAllStats() {
         if (confirm("⚠️ ВНИМАНИЕ! Это удалит ВЕСЬ рейтинг и историю всех игроков. Действие необратимо. Продолжить?")) {
             localStorage.removeItem(STORAGE_KEY_LEADERBOARD);
             localStorage.removeItem(STORAGE_KEY_PLAYERS);
-            localStorage.removeItem(STORAGE_KEY_GLOBAL_STATS);
             renderDashboard();
-            // Дополнительно оповестить другие вкладки через искусственное событие
             window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEY_LEADERBOARD, newValue: null }));
             window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEY_PLAYERS, newValue: null }));
             setTimeout(() => {
@@ -669,7 +561,7 @@
         }
     }
     
-    // ---------------------- НАСТРОЙКА QR И КНОПОК ----------------------
+    // Настройка UI
     function setupUI() {
         const gameLinkSpan = document.getElementById('gameLink');
         if (gameLinkSpan) gameLinkSpan.innerHTML = `🔗 ${GAME_URL}`;
@@ -681,7 +573,7 @@
         
         document.getElementById('copyLinkBtn')?.addEventListener('click', () => {
             navigator.clipboard.writeText(GAME_URL);
-            alert('✅ Ссылка скопирована! Отправьте её игрокам.');
+            alert('✅ Ссылка скопирована!');
         });
         
         document.getElementById('refreshBtn')?.addEventListener('click', () => {
@@ -695,7 +587,7 @@
         document.getElementById('clearBtn')?.addEventListener('click', resetAllStats);
     }
     
-    // ---------------------- СЛУШАТЕЛИ ОБНОВЛЕНИЙ ----------------------
+    // Слушатели и автообновление
     function startStorageListener() {
         window.addEventListener('storage', (e) => {
             if (e.key === STORAGE_KEY_LEADERBOARD || e.key === STORAGE_KEY_PLAYERS) {
@@ -705,7 +597,6 @@
         });
     }
     
-    // Автообновление каждые 2 секунды
     let interval;
     function startAutoRefresh() {
         if (interval) clearInterval(interval);
@@ -714,13 +605,12 @@
         }, 2000);
     }
     
-    // Инициализация
     function init() {
         setupUI();
         startStorageListener();
         startAutoRefresh();
         renderDashboard();
-        console.log("🎮 Панель организатора запущена. Рейтинг сохраняется навсегда после каждого прохождения.");
+        console.log("🎮 Панель организатора запущена. Рейтинг сохраняется навсегда.");
     }
     
     init();
