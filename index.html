@@ -279,14 +279,6 @@
             transform: translateY(2px);
             box-shadow: 0 2px 0 #1b5e20;
         }
-        
-        /* Стиль для имени над игроком (рендерится в canvas) */
-        .player-name-canvas {
-            font-family: 'Segoe UI', 'Poppins', sans-serif;
-            font-weight: bold;
-            text-shadow: 1px 1px 0px black;
-            white-space: nowrap;
-        }
     </style>
 </head>
 <body>
@@ -296,6 +288,10 @@
     // ========== НАСТРОЙКИ ИГРЫ ==========
     const MAZE_SIZE = 20;
     const CELL_SIZE = 32;
+    
+    // Ключи для localStorage (ДОЛЖНЫ СОВПАДАТЬ С DASHBOARD)
+    const STORAGE_KEY_LEADERBOARD = "maze_leaderboard";
+    const STORAGE_KEY_PLAYERS = "maze_players";
 
     const AVATAR_LIST = [
         { id: 1, imageUrl: "https://cdn-icons-png.flaticon.com/512/4472/4472533.png", color: "#8B5CF6", emoji: "🧙" },
@@ -306,7 +302,7 @@
         { id: 6, imageUrl: "https://cdn-icons-png.flaticon.com/512/4472/4472525.png", color: "#3B82F6", emoji: "🛡️" }
     ];
 
-    // Банк вопросов (12 уникальных)
+    // Банк вопросов
     const questionsBank = [
         { text: "💾 Что из перечисленного является оперативной памятью?", options: ["Жесткий диск", "SSD-накопитель", "RAM", "Процессор"], correct: 2 },
         { text: "🔢 Сколько бит в одном байте?", options: ["2", "8", "16", "1024"], correct: 1 },
@@ -322,14 +318,10 @@
         { text: "⌨️ Что делает кнопка «Ctrl + Z» в любом редакторе?", options: ["Сохраняет файл", "Копирует выделенный фрагмент", "Отменяет последнее действие", "Закрывает программу"], correct: 2 }
     ];
     
-    // Система неповторяющихся вопросов
     let playerUsedQuestions = {};
     
     function getRandomQuestionForPlayer(playerId) {
-        if (!playerUsedQuestions[playerId]) {
-            playerUsedQuestions[playerId] = [];
-        }
-        
+        if (!playerUsedQuestions[playerId]) playerUsedQuestions[playerId] = [];
         const usedIds = playerUsedQuestions[playerId];
         const availableQuestions = questionsBank.filter((_, idx) => !usedIds.includes(idx));
         
@@ -344,14 +336,8 @@
         
         const randomQuestionIndex = Math.floor(Math.random() * availableQuestions.length);
         const originalIndex = questionsBank.findIndex(q => q.text === availableQuestions[randomQuestionIndex].text);
-        
         playerUsedQuestions[playerId].push(originalIndex);
-        
         return { ...availableQuestions[randomQuestionIndex], id: Date.now() + Math.random() };
-    }
-    
-    function getRandomQuestion() { 
-        return getRandomQuestionForPlayer(localPlayerId);
     }
 
     function generateMaze(size) {
@@ -416,7 +402,7 @@
 
     let gameMaze = decorateMazeWithItems(baseMaze);
     let players = {};
-    let localPlayerId = "player_1";
+    let localPlayerId = null;
     let gameActive = false;
     let raceStartTime = 0;
     let finishOrder = [];
@@ -424,31 +410,70 @@
     let appDiv;
     let gameStateBeforeRating = null;
 
-    function saveLeaderboard() {
-        localStorage.setItem('maze_leaderboard', JSON.stringify(finishOrder));
-        if(players[localPlayerId]) {
-            const allPlayers = {};
-            allPlayers[localPlayerId] = {
-                name: players[localPlayerId].name,
-                avatarUrl: players[localPlayerId].avatarUrl,
-                color: players[localPlayerId].color,
-                emoji: players[localPlayerId].emoji,
-                x: players[localPlayerId].x,
-                y: players[localPlayerId].y,
-                score: players[localPlayerId].score,
-                finished: players[localPlayerId].finished,
-                finishPosition: players[localPlayerId].finishPosition
-            };
-            localStorage.setItem('maze_players', JSON.stringify(allPlayers));
-        }
-    }
-
-    function loadLeaderboard() {
-        const saved = localStorage.getItem('maze_leaderboard');
-        if(saved) {
+    // ========== ФУНКЦИИ СОХРАНЕНИЯ В localStorage ==========
+    function savePlayerToLocalStorage(player) {
+        if (!player || !player.id) return;
+        let allPlayers = {};
+        const raw = localStorage.getItem(STORAGE_KEY_PLAYERS);
+        if (raw) {
             try {
-                finishOrder = JSON.parse(saved);
+                allPlayers = JSON.parse(raw);
             } catch(e) {}
+        }
+        allPlayers[player.id] = {
+            id: player.id,
+            name: player.name,
+            avatarUrl: player.avatarUrl,
+            emoji: player.emoji,
+            color: player.color,
+            score: player.score,
+            finished: player.finished || false,
+            finishPosition: player.finishPosition || null,
+            finishTime: player.finishTime || null,
+            x: player.x || 1,
+            y: player.y || 1,
+            lastUpdate: Date.now()
+        };
+        localStorage.setItem(STORAGE_KEY_PLAYERS, JSON.stringify(allPlayers));
+    }
+    
+    function saveLeaderboardToLocalStorage() {
+        // Сортируем по времени финиша
+        const sorted = [...finishOrder].sort((a,b) => (a.finishTimestamp || 0) - (b.finishTimestamp || 0));
+        for (let i = 0; i < sorted.length; i++) {
+            sorted[i].position = i + 1;
+        }
+        localStorage.setItem(STORAGE_KEY_LEADERBOARD, JSON.stringify(sorted));
+    }
+    
+    function addToLeaderboard(player) {
+        if (!player || !player.id || !player.finished) return false;
+        
+        // Проверяем, есть ли уже в рейтинге
+        const exists = finishOrder.some(entry => entry.id === player.id);
+        if (exists) return false;
+        
+        const newEntry = {
+            id: player.id,
+            name: player.name,
+            score: player.score,
+            time: player.finishTime,
+            emoji: player.emoji,
+            finishTimestamp: player.finishTimestamp || Date.now(),
+            position: finishOrder.length + 1
+        };
+        finishOrder.push(newEntry);
+        saveLeaderboardToLocalStorage();
+        return true;
+    }
+    
+    function loadLeaderboardFromStorage() {
+        const raw = localStorage.getItem(STORAGE_KEY_LEADERBOARD);
+        if (raw) {
+            try {
+                finishOrder = JSON.parse(raw);
+                if (!Array.isArray(finishOrder)) finishOrder = [];
+            } catch(e) { finishOrder = []; }
         }
     }
 
@@ -479,7 +504,6 @@
         if(!ctx) return;
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
         
-        // Рисуем лабиринт и предметы
         for(let y = 0; y < MAZE_SIZE; y++) {
             for(let x = 0; x < MAZE_SIZE; x++) {
                 let cell = gameMaze[y][x];
@@ -531,38 +555,26 @@
             }
         }
         
-        // Рисуем игрока (фишку) с именем над ним
         const localP = players[localPlayerId];
         if(localP && !localP.finished) {
             const centerX = localP.x * CELL_SIZE + CELL_SIZE/2;
             const centerY = localP.y * CELL_SIZE + CELL_SIZE/2;
             
-            // Тень для круга
             ctx.shadowColor = "rgba(0,0,0,0.4)";
             ctx.shadowBlur = 4;
-            
-            // Рисуем круг фишки
             ctx.fillStyle = localP.color;
             ctx.beginPath(); 
             ctx.arc(centerX, centerY, 12, 0, 2*Math.PI); 
             ctx.fill();
-            
-            // Обводка золотом
             ctx.beginPath(); 
             ctx.arc(centerX, centerY, 14, 0, 2*Math.PI);
             ctx.strokeStyle = "gold";
             ctx.lineWidth = 3;
             ctx.stroke();
-            
-            // Сбрасываем тень для emoji и текста
             ctx.shadowBlur = 0;
-            
-            // Рисуем эмодзи внутри круга
             ctx.font = "18px sans-serif";
             ctx.fillStyle = "white";
             ctx.fillText(localP.emoji || "🧙", localP.x * CELL_SIZE + 8, localP.y * CELL_SIZE + 20);
-            
-            // Рисуем имя НАД фишкой (с тенью для читаемости)
             ctx.font = "bold 14px 'Segoe UI', 'Poppins', sans-serif";
             ctx.shadowColor = "rgba(0,0,0,0.7)";
             ctx.shadowBlur = 2;
@@ -570,13 +582,9 @@
             const nameText = localP.name.length > 12 ? localP.name.slice(0,10)+".." : localP.name;
             const textWidth = ctx.measureText(nameText).width;
             ctx.fillText(nameText, centerX - textWidth/2, localP.y * CELL_SIZE - 4);
-            
-            // Рисуем небольшую стрелку-указатель под именем (для красоты)
             ctx.fillStyle = "#FFD700";
             ctx.font = "12px sans-serif";
             ctx.fillText("▼", centerX - 4, localP.y * CELL_SIZE - 6);
-            
-            // Сбрасываем тень
             ctx.shadowBlur = 0;
             ctx.shadowColor = "transparent";
         }
@@ -602,6 +610,7 @@
                     if(gameMaze[player.y][player.x] === 3) gameMaze[player.y][player.x] = 0;
                     document.body.removeChild(modal); 
                     createEffect(player.x, player.y, "+5", "#2ecc71");
+                    savePlayerToLocalStorage(player);
                     refreshUI(); 
                 } else {
                     const fb = card.querySelector('#qFeedback');
@@ -628,7 +637,8 @@
         if(cell === 2) { 
             p.score += 10; 
             gameMaze[newY][newX] = 0; 
-            createEffect(newX, newY, "+10⭐", "gold"); 
+            createEffect(newX, newY, "+10⭐", "gold");
+            savePlayerToLocalStorage(p);
         }
         else if(cell === 3) { 
             p.hasPendingQuestion = true; 
@@ -638,16 +648,13 @@
         else if(cell === 4 && !p.finished) {
             p.finished = true; 
             p.finishTime = Date.now() - raceStartTime;
+            p.finishTimestamp = Date.now();
             p.finishPosition = finishOrder.length + 1;
-            finishOrder.push({ 
-                id: localPlayerId, 
-                name: p.name, 
-                score: p.score, 
-                time: p.finishTime, 
-                position: p.finishPosition,
-                emoji: p.emoji
-            });
-            saveLeaderboard();
+            
+            // Сохраняем в рейтинг
+            addToLeaderboard(p);
+            savePlayerToLocalStorage(p);
+            
             createEffect(newX, newY, "🏆 ФИНИШ!", "#ffd700");
             refreshUI(); 
             gameActive = false;
@@ -657,12 +664,14 @@
         }
         else if(cell === 5) { 
             p.frozenUntil = Date.now() + 1500; 
-            createEffect(newX, newY, "❄️ ЗАМОРОЗКА", "#88ccff"); 
+            createEffect(newX, newY, "❄️ ЗАМОРОЗКА", "#88ccff");
+            savePlayerToLocalStorage(p);
         }
         else if(cell === 6) { 
             createEffect(newX, newY, "⚡ УСКОРЕНИЕ", "#44ff44"); 
             gameMaze[newY][newX] = 0; 
         }
+        savePlayerToLocalStorage(p);
         refreshUI(); 
         return true;
     }
@@ -707,16 +716,15 @@
         gameActive = false;
         gameStateBeforeRating = null;
         players = {};
-        finishOrder = [];
-        playerUsedQuestions = {};
-        localPlayerId = "player_1";
+        localPlayerId = null;
         currentScreen = 'welcome';
         renderWelcomeScreen();
     }
 
     function showRatingOnly() {
         saveGameState();
-        const sorted = [...finishOrder].sort((a,b) => a.position - b.position);
+        loadLeaderboardFromStorage();
+        const sorted = [...finishOrder].sort((a,b) => (a.position || 999) - (b.position || 999));
         const hasActiveGame = gameStateBeforeRating !== null && gameStateBeforeRating.gameActive === true;
         
         appDiv.innerHTML = `
@@ -756,7 +764,8 @@
     }
 
     function showGlobalLeaderboard() {
-        const sorted = [...finishOrder].sort((a,b) => a.position - b.position);
+        loadLeaderboardFromStorage();
+        const sorted = [...finishOrder].sort((a,b) => (a.position || 999) - (b.position || 999));
         appDiv.innerHTML = `
             <div class="screen">
                 <h2 style="color:#ffd700;">🏆 ОБЩИЙ РЕЙТИНГ 🏆</h2>
@@ -792,31 +801,30 @@
     function resetAndRestart() {
         gameActive = false;
         gameStateBeforeRating = null;
-        const p = players[localPlayerId];
-        players = {}; 
-        finishOrder = [];
-        playerUsedQuestions = {};
-        gameMaze = decorateMazeWithItems(baseMaze);
-        if(p) { 
+        if (localPlayerId && players[localPlayerId]) {
+            const p = players[localPlayerId];
             p.x = 1; p.y = 1; p.score = 0; p.finished = false; 
-            p.finishTime = null; p.hasPendingQuestion = false; p.frozenUntil = null; 
-            players[localPlayerId] = p; 
+            p.finishTime = null; p.hasPendingQuestion = false; p.frozenUntil = null;
+            p.finishPosition = null;
+            savePlayerToLocalStorage(p);
         }
+        gameMaze = decorateMazeWithItems(baseMaze);
         startCountdown();
     }
 
     function startRace() {
         gameActive = true; 
         raceStartTime = Date.now(); 
-        finishOrder = [];
-        for(let id in players) { 
-            players[id].x = 1; 
-            players[id].y = 1; 
-            players[id].finished = false; 
-            players[id].score = 0; 
-            players[id].finishTime = null; 
-            players[id].hasPendingQuestion = false; 
-            players[id].frozenUntil = null; 
+        if (localPlayerId && players[localPlayerId]) {
+            players[localPlayerId].x = 1; 
+            players[localPlayerId].y = 1; 
+            players[localPlayerId].finished = false; 
+            players[localPlayerId].score = 0; 
+            players[localPlayerId].finishTime = null; 
+            players[localPlayerId].hasPendingQuestion = false; 
+            players[localPlayerId].frozenUntil = null;
+            players[localPlayerId].finishPosition = null;
+            savePlayerToLocalStorage(players[localPlayerId]);
         }
         gameMaze = decorateMazeWithItems(baseMaze);
         currentScreen = 'game'; 
@@ -896,9 +904,8 @@
             const name = document.getElementById('playerName').value.trim();
             if(!name) return alert("Введите имя!");
             localPlayerId = "player_" + Date.now() + "_" + Math.random().toString(36).substr(2, 6);
-            const img = new Image(); 
-            img.src = AVATAR_LIST[0].imageUrl;
             players[localPlayerId] = { 
+                id: localPlayerId,
                 name, 
                 avatarUrl: AVATAR_LIST[0].imageUrl, 
                 color: AVATAR_LIST[0].color, 
@@ -908,10 +915,12 @@
                 score: 0, 
                 finished: false, 
                 finishTime: null, 
+                finishTimestamp: null,
+                finishPosition: null,
                 hasPendingQuestion: false, 
-                frozenUntil: null, 
-                avatarImg: img 
+                frozenUntil: null
             };
+            savePlayerToLocalStorage(players[localPlayerId]);
             currentScreen = 'avatarPick'; 
             renderAvatarScreen();
         });
@@ -925,7 +934,7 @@
     function renderAvatarScreen() {
         appDiv.innerHTML = `
             <div class="screen">
-                <h2>🎨 ${players[localPlayerId]?.name},</h2> выберите аватара
+                <h2>🎨 Выбери аватара, ${players[localPlayerId]?.name}</h2>
                 <div class="avatar-selector" id="avatarSelector">
                     ${AVATAR_LIST.map((a, idx) => `
                         <div class="avatar-option ${idx===0?'selected':''}" data-url="${a.imageUrl}" data-color="${a.color}" data-emoji="${a.emoji}">
@@ -957,9 +966,7 @@
             players[localPlayerId].avatarUrl = selected.imageUrl; 
             players[localPlayerId].color = selected.color;
             players[localPlayerId].emoji = selected.emoji;
-            const img = new Image(); 
-            img.src = selected.imageUrl; 
-            players[localPlayerId].avatarImg = img;
+            savePlayerToLocalStorage(players[localPlayerId]);
             startCountdown();
         });
         
@@ -972,7 +979,7 @@
 
     function init() {
         appDiv = document.getElementById('app');
-        loadLeaderboard();
+        loadLeaderboardFromStorage();
         renderWelcomeScreen();
     }
     
