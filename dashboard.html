@@ -170,7 +170,7 @@
         <div class="players-panel">
             <div class="panel-title">🎮 ИГРОКИ ОНЛАЙН <span id="onlineCount" class="live-badge">0</span></div>
             <div id="playersGrid" class="players-grid"><div class="empty-state">⏳ Ожидание игроков...</div></div>
-            <div class="sync-status">🔄 Обновляется в реальном времени (Firebase)</div>
+            <div class="sync-status">🔄 Обновляется (Firebase)</div>
         </div>
         <div class="leaderboard-panel">
             <div class="panel-title">🏆 РЕЙТИНГ ФИНИШЁРОВ 🏆</div>
@@ -178,7 +178,7 @@
             <div class="sync-status">⭐ Все результаты сохраняются в облаке</div>
         </div>
     </div>
-    <div class="footer">💡 Игроки сканируют QR → проходят лабиринт → результаты сохраняются в Firebase и видны всем!</div>
+    <div class="footer">💡 Игроки сканируют QR → проходят лабиринт → результаты!</div>
 </div>
 
 <script>
@@ -212,7 +212,7 @@
         });
     }
     
-    // Слушаем рейтинг в реальном времени
+    // Рейтинг в реальном времени
     database.ref('leaderboard').on('value', (snapshot) => {
         const data = snapshot.val();
         if (data) {
