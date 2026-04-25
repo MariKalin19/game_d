@@ -3,31 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>ИВГУ Лабиринт — Панель организатора | Живой рейтинг</title>
+    <title>ИВГУ Лабиринт — Панель организатора | Firebase Live</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             min-height: 100vh;
             background: linear-gradient(135deg, #0b2b3b, #1a4a6f, #0e2a3a);
             font-family: 'Segoe UI', 'Poppins', system-ui, sans-serif;
             padding: 20px;
         }
-
-        .dashboard {
-            max-width: 1300px;
-            margin: 0 auto;
-        }
-
-        .main-header {
-            text-align: center;
-            margin-bottom: 25px;
-        }
-
+        .dashboard { max-width: 1300px; margin: 0 auto; }
+        .main-header { text-align: center; margin-bottom: 25px; }
         .main-header h1 {
             font-size: 2rem;
             background: linear-gradient(135deg, #FFD700, #FFA500, #FF8C00);
@@ -40,24 +31,11 @@
             flex-wrap: wrap;
             justify-content: center;
         }
-
-        .badge-live {
-            background: #e74c3c;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 30px;
-            font-size: 0.7rem;
-            font-weight: bold;
-            animation: pulse 1s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
-        }
-
+        .badge-live { background: #e74c3c; color: white; padding: 4px 12px; border-radius: 30px; font-size: 0.7rem; animation: pulse 1s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.6;} }
+        
         .qr-section {
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(0,0,0,0.5);
             backdrop-filter: blur(15px);
             border-radius: 40px;
             padding: 20px;
@@ -67,75 +45,26 @@
             align-items: center;
             justify-content: space-between;
             gap: 20px;
-            border: 1px solid rgba(255, 215, 0, 0.3);
+            border: 1px solid rgba(255,215,0,0.3);
         }
-
-        .qr-box {
-            text-align: center;
-        }
-
-        .qr-code {
-            background: white;
-            padding: 10px;
-            border-radius: 24px;
-            display: inline-block;
-        }
-
-        .qr-code img {
-            width: 130px;
-            height: 130px;
-            border-radius: 16px;
-        }
-
-        .game-link {
-            font-family: monospace;
-            background: #000000aa;
-            padding: 8px 16px;
-            border-radius: 40px;
-            color: #ffd966;
-            margin-top: 8px;
-            font-size: 0.8rem;
-        }
-
+        .qr-box { text-align: center; }
+        .qr-code { background: white; padding: 10px; border-radius: 24px; display: inline-block; }
+        .qr-code img { width: 130px; height: 130px; border-radius: 16px; }
+        .game-link { font-family: monospace; background: #000000aa; padding: 8px 16px; border-radius: 40px; color: #ffd966; margin-top: 8px; font-size: 0.8rem; }
         .stats-summary {
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(0,0,0,0.5);
             padding: 12px 24px;
             border-radius: 40px;
             text-align: center;
             flex: 1;
             min-width: 200px;
         }
-
-        .stats-summary h3 {
-            color: #ffd966;
-            font-size: 0.9rem;
-        }
-
-        .stats-numbers {
-            display: flex;
-            gap: 25px;
-            justify-content: center;
-            margin-top: 8px;
-        }
-
-        .stat-card {
-            background: rgba(255,255,255,0.1);
-            border-radius: 30px;
-            padding: 8px 18px;
-            text-align: center;
-        }
-
-        .stat-number {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #ffd700;
-        }
-
-        .stat-label {
-            font-size: 0.7rem;
-            color: #ccc;
-        }
-
+        .stats-summary h3 { color: #ffd966; font-size: 0.9rem; }
+        .stats-numbers { display: flex; gap: 25px; justify-content: center; margin-top: 8px; flex-wrap: wrap; }
+        .stat-card { background: rgba(255,255,255,0.1); border-radius: 30px; padding: 8px 18px; text-align: center; }
+        .stat-number { font-size: 2rem; font-weight: bold; color: #ffd700; }
+        .stat-label { font-size: 0.7rem; color: #ccc; }
+        
         button {
             background: linear-gradient(135deg, #ff8c42, #ff5722);
             border: none;
@@ -144,39 +73,21 @@
             color: white;
             font-weight: bold;
             cursor: pointer;
-            transition: 0.1s;
             margin: 4px;
         }
-
-        button:active {
-            transform: scale(0.96);
-        }
-
-        .btn-danger {
-            background: linear-gradient(135deg, #c0392b, #e74c3c);
-        }
-
-        .two-columns {
-            display: grid;
-            grid-template-columns: 1fr 1.2fr;
-            gap: 25px;
-            margin-bottom: 25px;
-        }
-
-        @media (max-width: 800px) {
-            .two-columns {
-                grid-template-columns: 1fr;
-            }
-        }
-
+        button:active { transform: scale(0.96); }
+        .btn-danger { background: linear-gradient(135deg, #c0392b, #e74c3c); }
+        
+        .two-columns { display: grid; grid-template-columns: 1fr 1.2fr; gap: 25px; margin-bottom: 25px; }
+        @media (max-width: 800px) { .two-columns { grid-template-columns: 1fr; } }
+        
         .players-panel, .leaderboard-panel {
-            background: rgba(0, 0, 0, 0.55);
+            background: rgba(0,0,0,0.55);
             backdrop-filter: blur(10px);
             border-radius: 40px;
             padding: 20px;
             border: 1px solid rgba(255,215,0,0.3);
         }
-
         .panel-title {
             font-size: 1.4rem;
             color: #ffd966;
@@ -188,7 +99,6 @@
             gap: 10px;
             flex-wrap: wrap;
         }
-
         .players-grid {
             display: flex;
             flex-direction: column;
@@ -197,211 +107,101 @@
             overflow-y: auto;
             padding-right: 5px;
         }
-
         .player-card {
-            background: rgba(30, 40, 60, 0.8);
+            background: rgba(30,40,60,0.8);
             border-radius: 28px;
             padding: 12px 16px;
-            transition: 0.1s;
             border-left: 5px solid #ffaa33;
         }
-
-        .player-card.finished {
-            border-left-color: #2ecc71;
-            background: rgba(30, 70, 50, 0.7);
-            opacity: 0.85;
-        }
-
-        .player-info {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            flex-wrap: wrap;
-        }
-
-        .player-avatar {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid #ffd700;
-        }
-
-        .player-details {
-            flex: 1;
-        }
-
-        .player-name {
-            font-weight: bold;
-            color: white;
-            font-size: 1.1rem;
-        }
-
-        .player-stats {
-            display: flex;
-            gap: 18px;
-            margin-top: 5px;
-            font-size: 0.8rem;
-            color: #ddd;
-            flex-wrap: wrap;
-        }
-
-        .score-badge {
-            color: #ffd966;
-            font-weight: bold;
-        }
-
-        .status-badge {
-            background: #2c3e50;
-            padding: 2px 10px;
-            border-radius: 30px;
-        }
-
-        .status-finished {
-            background: #27ae60;
-            color: white;
-        }
-
-        .leaderboard-list {
-            list-style: none;
-            max-height: 500px;
-            overflow-y: auto;
-        }
-
+        .player-card.finished { border-left-color: #2ecc71; background: rgba(30,70,50,0.7); opacity: 0.85; }
+        .player-info { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+        .player-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid #ffd700; }
+        .player-details { flex: 1; }
+        .player-name { font-weight: bold; color: white; font-size: 1.1rem; }
+        .player-stats { display: flex; gap: 18px; margin-top: 5px; font-size: 0.8rem; color: #ddd; flex-wrap: wrap; }
+        .score-badge { color: #ffd966; font-weight: bold; }
+        .status-badge { background: #2c3e50; padding: 2px 10px; border-radius: 30px; }
+        .status-finished { background: #27ae60; color: white; }
+        
+        .leaderboard-list { list-style: none; max-height: 500px; overflow-y: auto; }
         .leaderboard-list li {
-            background: rgba(25, 35, 55, 0.8);
+            background: rgba(25,35,55,0.8);
             margin: 8px 0;
             padding: 12px 16px;
             border-radius: 50px;
             display: flex;
             align-items: center;
             gap: 12px;
-            transition: 0.1s;
         }
-
         .rank-1 { background: linear-gradient(95deg, #d4af37, #b8860b); }
         .rank-2 { background: linear-gradient(95deg, #b0b0b0, #7a7a7a); }
         .rank-3 { background: linear-gradient(95deg, #cd7f32, #a0522d); }
-
-        .empty-state {
-            text-align: center;
-            padding: 40px;
-            color: #aaa;
-            background: rgba(0,0,0,0.3);
-            border-radius: 40px;
-        }
-
-        .footer {
-            text-align: center;
-            margin-top: 20px;
-            color: rgba(255,255,200,0.5);
-            font-size: 0.7rem;
-        }
-
-        .auto-refresh-note {
-            text-align: center;
-            font-size: 0.7rem;
-            margin-top: 15px;
-            color: #88ff88;
-        }
-
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: #1a2a3a;
-            border-radius: 10px;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: #ffaa33;
-            border-radius: 10px;
-        }
+        
+        .empty-state { text-align: center; padding: 40px; color: #aaa; background: rgba(0,0,0,0.3); border-radius: 40px; }
+        .footer { text-align: center; margin-top: 20px; color: rgba(255,255,200,0.5); font-size: 0.7rem; }
+        .live-badge { background: #27ae60; padding: 2px 8px; border-radius: 20px; font-size: 0.7rem; margin-left: 10px; }
+        .sync-status { font-size: 0.7rem; color: #88ff88; text-align: center; margin-top: 10px; }
     </style>
 </head>
 <body>
 <div class="dashboard">
     <div class="main-header">
-        <h1>
-            🏛️ ИВГУ МЕГА-ЛАБИРИНТ 🏛️
-            <span class="badge-live">LIVE</span>
-        </h1>
+        <h1>🏛️ ИВГУ МЕГА-ЛАБИРИНТ 🏛️ <span class="badge-live">LIVE</span></h1>
     </div>
 
     <div class="qr-section">
         <div class="qr-box">
-            <div class="qr-code" id="qrCode">
-                <img id="qrImg" alt="QR-код">
-            </div>
+            <div class="qr-code"><img id="qrImg" alt="QR-код"></div>
             <div class="game-link" id="gameLink"></div>
-            <div>
-                <button id="copyLinkBtn">📋 Копировать ссылку</button>
-            </div>
+            <button id="copyLinkBtn">📋 Копировать ссылку</button>
         </div>
         <div class="stats-summary">
-            <h3>📊 Сводка</h3>
+            <h3>📊 Сводка (Firebase)</h3>
             <div class="stats-numbers">
-                <div class="stat-card">
-                    <div class="stat-number" id="totalFinishedStat">0</div>
-                    <div class="stat-label">🏁 Финишировало</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="activeNowStat">0</div>
-                    <div class="stat-label">🎮 Активны сейчас</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="totalPlayersStat">0</div>
-                    <div class="stat-label">👥 Всего игроков</div>
-                </div>
+                <div class="stat-card"><div class="stat-number" id="totalFinishedStat">0</div><div class="stat-label">🏁 Финишировало</div></div>
+                <div class="stat-card"><div class="stat-number" id="activeNowStat">0</div><div class="stat-label">🎮 Активны сейчас</div></div>
+                <div class="stat-card"><div class="stat-number" id="totalPlayersStat">0</div><div class="stat-label">👥 Всего игроков</div></div>
             </div>
         </div>
-        <div>
-            <button id="refreshBtn">🔄 Обновить</button>
-            <button id="clearBtn" class="btn-danger">🗑️ Сбросить всю статистику</button>
-        </div>
+        <button id="clearBtn" class="btn-danger">🗑️ Сбросить рейтинг</button>
     </div>
 
     <div class="two-columns">
         <div class="players-panel">
-            <div class="panel-title">
-                🎮 ИГРОКИ ОНЛАЙН
-                <span id="onlineCount" style="background:#e67e22; padding:2px 12px; border-radius:30px; font-size:0.8rem;">0</span>
-            </div>
-            <div id="playersGrid" class="players-grid">
-                <div class="empty-state">⏳ Ожидание игроков...</div>
-            </div>
-            <div class="auto-refresh-note">
-                🔄 Показывает активных за последние 90 секунд
-            </div>
+            <div class="panel-title">🎮 ИГРОКИ ОНЛАЙН <span id="onlineCount" class="live-badge">0</span></div>
+            <div id="playersGrid" class="players-grid"><div class="empty-state">⏳ Ожидание игроков...</div></div>
+            <div class="sync-status">🔄 Обновляется в реальном времени (Firebase)</div>
         </div>
-
         <div class="leaderboard-panel">
-            <div class="panel-title">
-                🏆 РЕЙТИНГ ФИНИШЁРОВ 🏆
-                <span style="font-size:0.7rem;">(сохраняется навсегда)</span>
-            </div>
-            <div id="leaderboardContainer">
-                <div class="empty-state">🏁 Пока никто не финишировал</div>
-            </div>
-            <div class="auto-refresh-note">
-                ⭐ Каждый финиш навсегда добавляется в рейтинг
-            </div>
+            <div class="panel-title">🏆 РЕЙТИНГ ФИНИШЁРОВ 🏆</div>
+            <div id="leaderboardContainer"><div class="empty-state">🏁 Пока никто не финишировал</div></div>
+            <div class="sync-status">⭐ Все результаты сохраняются в облаке</div>
         </div>
     </div>
-
-    <div class="footer">
-        💡 Игроки сканируют QR-код → проходят лабиринт → их результат НАВСЕГДА сохраняется в рейтинге.<br>
-        📌 Данные синхронизируются между всеми устройствами автоматически.
-    </div>
+    <div class="footer">💡 Игроки сканируют QR → проходят лабиринт → результаты сохраняются в Firebase и видны всем!</div>
 </div>
 
 <script>
-    // Ключи для localStorage (ДОЛЖНЫ СОВПАДАТЬ С index.html)
-    const STORAGE_KEY_LEADERBOARD = "maze_leaderboard";
-    const STORAGE_KEY_PLAYERS = "maze_players";
+    // ==================== КОНФИГУРАЦИЯ FIREBASE ====================
+    // ⚠️ ВСТАВЬТЕ ВАШИ ДАННЫЕ ИЗ ПРОЕКТА FIREBASE ⚠️
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT.firebaseapp.com",
+        databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+        projectId: "YOUR_PROJECT",
+        storageBucket: "YOUR_PROJECT.appspot.com",
+        messagingSenderId: "YOUR_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
+    
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+    
     const GAME_URL = "https://marikalin19.github.io/game/";
-
+    
+    let globalLeaderboard = [];
+    let activePlayers = {};
+    
     function escapeHtml(str) {
         if (!str) return '';
         return String(str).replace(/[&<>]/g, function(m) {
@@ -411,119 +211,81 @@
             return m;
         });
     }
-
-    // Получить рейтинг из localStorage
-    function getLeaderboard() {
-        const raw = localStorage.getItem(STORAGE_KEY_LEADERBOARD);
-        if (!raw) return [];
-        try {
-            let data = JSON.parse(raw);
-            if (!Array.isArray(data)) return [];
-            data.sort((a, b) => (a.position || 999) - (b.position || 999));
-            return data;
-        } catch(e) {
-            return [];
+    
+    // Слушаем рейтинг в реальном времени
+    database.ref('leaderboard').on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+            globalLeaderboard = Object.values(data);
+            globalLeaderboard.sort((a, b) => (a.finishTimestamp || 0) - (b.finishTimestamp || 0));
+            for (let i = 0; i < globalLeaderboard.length; i++) {
+                globalLeaderboard[i].position = i + 1;
+            }
+        } else {
+            globalLeaderboard = [];
         }
-    }
-
-    // Получить всех игроков
-    function getAllPlayers() {
-        const raw = localStorage.getItem(STORAGE_KEY_PLAYERS);
-        if (!raw) return {};
-        try {
-            const parsed = JSON.parse(raw);
+        renderLeaderboard();
+        updateStats();
+    });
+    
+    // Слушаем активных игроков
+    database.ref('activePlayers').on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+            activePlayers = data;
+            // Удаляем старых (последнее обновление более 60 секунд)
             const now = Date.now();
-            const activePlayers = {};
-            for (let id in parsed) {
-                const p = parsed[id];
-                const isFinished = p.finished === true;
-                const lastUpdate = p.lastUpdate || 0;
-                const isRecent = (now - lastUpdate) < 90000; // 90 секунд
-                
-                if (isFinished || isRecent) {
-                    activePlayers[id] = {
-                        id: id,
-                        name: p.name || "Без имени",
-                        avatarUrl: p.avatarUrl || "https://cdn-icons-png.flaticon.com/512/4472/4472533.png",
-                        emoji: p.emoji || "🧙",
-                        score: p.score || 0,
-                        finished: p.finished === true,
-                        finishPosition: p.finishPosition || null,
-                        x: p.x || 1,
-                        y: p.y || 1,
-                        lastUpdate: p.lastUpdate || now,
-                        color: p.color || "#ffaa44"
-                    };
+            for (let id in activePlayers) {
+                if (now - (activePlayers[id].lastSeen || 0) > 60000) {
+                    delete activePlayers[id];
                 }
             }
-            return activePlayers;
-        } catch(e) {
-            return {};
+        } else {
+            activePlayers = {};
         }
-    }
-
-    // Главная отрисовка
-    function renderDashboard() {
-        const leaderboardArray = getLeaderboard();
-        const playersMap = getAllPlayers();
-        
-        // Статистика
-        const totalFinished = leaderboardArray.length;
-        const activeNow = Object.values(playersMap).filter(p => !p.finished).length;
-        const totalPlayersEver = Object.keys(playersMap).length;
-        
-        document.getElementById('totalFinishedStat').innerText = totalFinished;
-        document.getElementById('activeNowStat').innerText = activeNow;
-        document.getElementById('totalPlayersStat').innerText = totalPlayersEver;
-        document.getElementById('onlineCount').innerText = Object.keys(playersMap).length;
-        
-        renderPlayersList(playersMap);
-        renderLeaderboard(leaderboardArray);
-    }
+        renderPlayersList();
+        updateStats();
+    });
     
-    function renderPlayersList(playersMap) {
+    function renderPlayersList() {
         const container = document.getElementById('playersGrid');
-        const playersArr = Object.values(playersMap);
+        const playersArr = Object.values(activePlayers);
+        
         if (playersArr.length === 0) {
             container.innerHTML = '<div class="empty-state">👥 Нет активных игроков. Отсканируйте QR-код!</div>';
             return;
         }
         
         playersArr.sort((a,b) => {
-            if (a.finished === b.finished) return b.score - a.score;
+            if (a.finished === b.finished) return (b.score || 0) - (a.score || 0);
             return a.finished ? 1 : -1;
         });
         
         container.innerHTML = playersArr.map(p => `
             <div class="player-card ${p.finished ? 'finished' : ''}">
                 <div class="player-info">
-                    <img class="player-avatar" src="${p.avatarUrl}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/4472/4472533.png'">
+                    <img class="player-avatar" src="${p.avatarUrl || 'https://cdn-icons-png.flaticon.com/512/4472/4472533.png'}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/4472/4472533.png'">
                     <div class="player-details">
-                        <div class="player-name">
-                            ${p.emoji || '🎮'} ${escapeHtml(p.name)}
-                            ${p.finished ? ' 🏆' : ''}
-                        </div>
+                        <div class="player-name">${p.emoji || '🎮'} ${escapeHtml(p.name)} ${p.finished ? ' 🏆' : ''}</div>
                         <div class="player-stats">
-                            <span>⭐ <span class="score-badge">${p.score}</span> очков</span>
-                            <span class="status-badge ${p.finished ? 'status-finished' : ''}">
-                                ${p.finished ? '✅ Финишировал' : '🎯 В лабиринте'}
-                            </span>
-                            ${p.finished && p.finishPosition ? `<span>🏅 ${p.finishPosition} место</span>` : ''}
+                            <span>⭐ <span class="score-badge">${p.score || 0}</span> очков</span>
+                            <span class="status-badge ${p.finished ? 'status-finished' : ''}">${p.finished ? '✅ Финишировал' : '🎯 В игре'}</span>
                         </div>
                     </div>
                 </div>
             </div>
         `).join('');
+        document.getElementById('onlineCount').innerText = playersArr.length;
     }
     
-    function renderLeaderboard(leaderboard) {
+    function renderLeaderboard() {
         const container = document.getElementById('leaderboardContainer');
-        if (!leaderboard || leaderboard.length === 0) {
+        if (!globalLeaderboard || globalLeaderboard.length === 0) {
             container.innerHTML = '<div class="empty-state">🏁 Пока никто не финишировал. Будьте первым!</div>';
             return;
         }
         
-        const sorted = [...leaderboard].sort((a,b) => a.position - b.position);
+        const sorted = [...globalLeaderboard];
         container.innerHTML = `
             <ul class="leaderboard-list">
                 ${sorted.map(entry => {
@@ -547,73 +309,39 @@
         `;
     }
     
-    // Сброс статистики
-    function resetAllStats() {
-        if (confirm("⚠️ ВНИМАНИЕ! Это удалит ВЕСЬ рейтинг и историю всех игроков. Действие необратимо. Продолжить?")) {
-            localStorage.removeItem(STORAGE_KEY_LEADERBOARD);
-            localStorage.removeItem(STORAGE_KEY_PLAYERS);
-            renderDashboard();
-            window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEY_LEADERBOARD, newValue: null }));
-            window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEY_PLAYERS, newValue: null }));
-            setTimeout(() => {
-                alert("✅ Вся статистика и рейтинг полностью сброшены.");
-            }, 50);
+    function updateStats() {
+        const totalFinished = globalLeaderboard.length;
+        const activeNow = Object.values(activePlayers).filter(p => !p.finished).length;
+        const totalPlayers = Object.keys(activePlayers).length;
+        
+        document.getElementById('totalFinishedStat').innerText = totalFinished;
+        document.getElementById('activeNowStat').innerText = activeNow;
+        document.getElementById('totalPlayersStat').innerText = totalPlayers;
+    }
+    
+    // Сброс всего рейтинга
+    async function resetAllStats() {
+        if (confirm("⚠️ ВНИМАНИЕ! Это удалит ВЕСЬ рейтинг и историю всех игроков из Firebase. Действие необратимо. Продолжить?")) {
+            await database.ref('leaderboard').remove();
+            await database.ref('activePlayers').remove();
+            alert("✅ Вся статистика и рейтинг полностью сброшены.");
         }
     }
     
     // Настройка UI
     function setupUI() {
-        const gameLinkSpan = document.getElementById('gameLink');
-        if (gameLinkSpan) gameLinkSpan.innerHTML = `🔗 ${GAME_URL}`;
-        
-        const qrImg = document.getElementById('qrImg');
-        if (qrImg) {
-            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(GAME_URL)}`;
-        }
+        document.getElementById('gameLink').innerHTML = `🔗 ${GAME_URL}`;
+        document.getElementById('qrImg').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(GAME_URL)}`;
         
         document.getElementById('copyLinkBtn')?.addEventListener('click', () => {
             navigator.clipboard.writeText(GAME_URL);
             alert('✅ Ссылка скопирована!');
         });
         
-        document.getElementById('refreshBtn')?.addEventListener('click', () => {
-            renderDashboard();
-            const btn = document.getElementById('refreshBtn');
-            const original = btn.innerText;
-            btn.innerText = '✅ Обновлено!';
-            setTimeout(() => { if(btn) btn.innerText = original; }, 1000);
-        });
-        
         document.getElementById('clearBtn')?.addEventListener('click', resetAllStats);
     }
     
-    // Слушатели и автообновление
-    function startStorageListener() {
-        window.addEventListener('storage', (e) => {
-            if (e.key === STORAGE_KEY_LEADERBOARD || e.key === STORAGE_KEY_PLAYERS) {
-                console.log("📢 Обнаружены изменения, обновляем панель");
-                renderDashboard();
-            }
-        });
-    }
-    
-    let interval;
-    function startAutoRefresh() {
-        if (interval) clearInterval(interval);
-        interval = setInterval(() => {
-            renderDashboard();
-        }, 2000);
-    }
-    
-    function init() {
-        setupUI();
-        startStorageListener();
-        startAutoRefresh();
-        renderDashboard();
-        console.log("🎮 Панель организатора запущена. Рейтинг сохраняется навсегда.");
-    }
-    
-    init();
+    setupUI();
 </script>
 </body>
 </html>
